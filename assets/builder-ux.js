@@ -10,6 +10,7 @@
   const summaryToggles=[...document.querySelectorAll('[data-summary-toggle]')];
   const summaryClose=document.querySelector('[data-summary-close]');
   const backdrop=document.querySelector('[data-summary-backdrop]');
+  const summarySubmit=document.querySelector('#sendBtn');
   const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
   const mobileQuery=matchMedia('(max-width:720px)');
   let current=0;
@@ -36,6 +37,14 @@
       const icon=button.querySelector('i');
       if(icon) icon.textContent=i<current&&i<=furthest?'✓':String(i+1);
     });
+    if(summarySubmit){
+      const locked=furthest<stages.length-1;
+      summarySubmit.disabled=locked;
+      summarySubmit.setAttribute('aria-disabled',String(locked));
+      summarySubmit.textContent=locked?'Пройдите 4 шага':'Сформировать заявку';
+      summarySubmit.style.opacity=locked?'.48':'1';
+      summarySubmit.style.cursor=locked?'not-allowed':'pointer';
+    }
   }
 
   function show(index,focus=true,direction){
