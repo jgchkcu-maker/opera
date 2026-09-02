@@ -112,6 +112,8 @@ const out={
   zero:b.isValidQuantity(0),
   negative:b.isValidQuantity(-12),
   normal:b.isValidQuantity(500),
+  decimalQty:b.isValidQuantity(1.5),
+  decimalDimension:b.isValidDimension(90.5),
   oddPages:b.isValidPages(5),
   evenPages:b.isValidPages(20),
   badEmail:b.isValidEmail('not-an-email'),
@@ -138,6 +140,8 @@ console.log(JSON.stringify(out));
         self.assertFalse(data["zero"])
         self.assertFalse(data["negative"])
         self.assertTrue(data["normal"])
+        self.assertFalse(data["decimalQty"])
+        self.assertTrue(data["decimalDimension"])
         self.assertFalse(data["oddPages"])
         self.assertTrue(data["evenPages"])
         self.assertFalse(data["badEmail"])
@@ -162,6 +166,16 @@ console.log(JSON.stringify(out));
         self.assertIn("furthest", ux)
         self.assertRegex(ux, r"disabled\s*=\s*i\s*>\s*furthest")
         self.assertIn("validateStage", ux)
+
+    def test_builder_summary_cannot_skip_unconfirmed_steps(self):
+        ux = read("assets/builder-ux.js")
+        self.assertIn("summarySubmit.disabled=locked", ux)
+        self.assertIn("Пройдите 4 шага", ux)
+
+    def test_mail_handoff_is_honest_about_local_attachment(self):
+        js = read("assets/builder.js")
+        self.assertIn("приложите его вручную", js)
+        self.assertIn("приложить к письму", js)
 
     def test_ci_runs_build_validator_before_regressions(self):
         workflow = read(".github/workflows/ci.yml")
