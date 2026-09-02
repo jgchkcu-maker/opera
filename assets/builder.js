@@ -36,13 +36,14 @@
   let runtime=null;
 
   const toNumber=value=>Number(String(value??'').replace(',','.'));
-  const isValidQuantity=value=>Number.isFinite(toNumber(value))&&toNumber(value)>0;
+  const isValidDimension=value=>Number.isFinite(toNumber(value))&&toNumber(value)>0;
+  const isValidQuantity=value=>isValidDimension(value)&&Number.isInteger(toNumber(value));
   const isValidPages=value=>Number.isInteger(toNumber(value))&&toNumber(value)>=4&&toNumber(value)%2===0;
   const isValidEmail=value=>/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i.test(String(value||'').trim());
   const isValidPhone=value=>String(value||'').replace(/\D/g,'').length>=6;
   const isPastDate=(value,todayISO)=>Boolean(value&&todayISO&&String(value)<String(todayISO));
   const isCustomSize=value=>String(value||'').trim()==='Свой размер';
-  const customSizeText=(width,height)=>isValidQuantity(width)&&isValidQuantity(height)?`${toNumber(width)} × ${toNumber(height)} мм`:'Свой размер';
+  const customSizeText=(width,height)=>isValidDimension(width)&&isValidDimension(height)?`${toNumber(width)} × ${toNumber(height)} мм`:'Свой размер';
   const canVisitStep=(target,furthest)=>Number.isInteger(Number(target))&&Number(target)>=0&&Number(target)<=Number(furthest);
 
   function validateStepData(index,data={}){
@@ -51,7 +52,7 @@
     if(index===1){
       if(!data.size) errors.push('Выберите формат.');
       if(!isValidQuantity(data.qty)) errors.push('Укажите тираж больше нуля.');
-      if(isCustomSize(data.size)&&(!isValidQuantity(data.customWidth)||!isValidQuantity(data.customHeight))) errors.push('Укажите ширину и высоту своего размера.');
+      if(isCustomSize(data.size)&&(!isValidDimension(data.customWidth)||!isValidDimension(data.customHeight))) errors.push('Укажите ширину и высоту своего размера.');
       if(data.pagesRequired&&!isValidPages(data.pages)) errors.push('Количество страниц должно быть чётным и не меньше 4.');
     }
     if(index===2){
@@ -176,13 +177,13 @@
 
     function managerText(){
       const p=PRODUCTS[state.product];
-      return `Новая заявка · ${p.name}\nФормат: ${sizeText()}\nТираж: ${$('#qty')?.value||'—'} шт.${p.pages?`\nСтраниц: ${$('#pages')?.value||'—'}`:''}\nМатериал: ${$('#paper')?.value||'—'} · ${$('#density')?.value||'—'}\nПечать: ${state.side||'—'}\nДопечатная: ${state.prepress}\nПостпечатка: ${finishText()}\nМакет: ${state.file?state.file.name:'не приложен'}\nПолучение: ${state.delivery}${state.delivery.startsWith('Курьер')&&$('#address')?.value?` · ${$('#address').value}`:''}\nКлиент: ${$('#name')?.value||'—'}\nТелефон: ${$('#phone')?.value||'—'}\nE-mail: ${$('#email')?.value||'—'}${$('#desiredDate')?.value?`\nЖелаемый срок: ${$('#desiredDate').value}`:''}${$('#notes')?.value.trim()?`\nКомментарий: ${$('#notes').value.trim()}`:''}`;
+      return `Новая заявка · ${p.name}\nФормат: ${sizeText()}\nТираж: ${$('#qty')?.value||'—'} шт.${p.pages?`\nСтраниц: ${$('#pages')?.value||'—'}`:''}\nМатериал: ${$('#paper')?.value||'—'} · ${$('#density')?.value||'—'}\nПечать: ${state.side||'—'}\nДопечатная: ${state.prepress}\nПостпечатка: ${finishText()}\nМакет: ${state.file?`${state.file.name} (приложить к письму)`:'не приложен'}\nПолучение: ${state.delivery}${state.delivery.startsWith('Курьер')&&$('#address')?.value?` · ${$('#address').value}`:''}\nКлиент: ${$('#name')?.value||'—'}\nТелефон: ${$('#phone')?.value||'—'}\nE-mail: ${$('#email')?.value||'—'}${$('#desiredDate')?.value?`\nЖелаемый срок: ${$('#desiredDate').value}`:''}${$('#notes')?.value.trim()?`\nКомментарий: ${$('#notes').value.trim()}`:''}`;
     }
 
     function completeness(){
       const p=PRODUCTS[state.product];
       const checks=[Boolean(state.product),Boolean($('#size')?.value),isValidQuantity($('#qty')?.value),Boolean($('#paper')?.value),Boolean(state.side),Boolean($('#name')?.value.trim()),Boolean($('#phone')?.value.trim()||$('#email')?.value.trim()),Boolean(state.delivery)];
-      if(isCustomSize($('#size')?.value)) checks.push(isValidQuantity($('#customWidth')?.value)&&isValidQuantity($('#customHeight')?.value));
+      if(isCustomSize($('#size')?.value)) checks.push(isValidDimension($('#customWidth')?.value)&&isValidDimension($('#customHeight')?.value));
       if(p.pages) checks.push(isValidPages($('#pages')?.value));
       if(state.delivery.startsWith('Курьер')) checks.push(Boolean($('#address')?.value.trim()));
       return Math.round(checks.filter(Boolean).length/checks.length*100);
@@ -197,7 +198,7 @@
 
     function update(){
       const p=PRODUCTS[state.product];
-      if($('#sumProduct')) $('#sumProduct').textContent=p.name;if($('#sumSize')) $('#sumSize').textContent=sizeText();if($('#sumQty')) $('#sumQty').textContent=isValidQuantity($('#qty')?.value)?`${$('#qty').value} шт.`:'—';if($('#sumPages')) $('#sumPages').textContent=$('#pages')?.value||'—';if($('#sumPaper')) $('#sumPaper').textContent=`${$('#paper')?.value||'—'} · ${$('#density')?.value||'—'}`;if($('#sumSide')) $('#sumSide').textContent=state.side||'—';if($('#sumFinish')) $('#sumFinish').textContent=finishText();if($('#sumDelivery')) $('#sumDelivery').textContent=state.delivery;if($('#sumContact')) $('#sumContact').textContent=contactText();if($('#sumFile')) $('#sumFile').textContent=state.file?state.file.name:'не приложен';
+      if($('#sumProduct')) $('#sumProduct').textContent=p.name;if($('#sumSize')) $('#sumSize').textContent=sizeText();if($('#sumQty')) $('#sumQty').textContent=isValidQuantity($('#qty')?.value)?`${$('#qty').value} шт.`:'—';if($('#sumPages')) $('#sumPages').textContent=$('#pages')?.value||'—';if($('#sumPaper')) $('#sumPaper').textContent=`${$('#paper')?.value||'—'} · ${$('#density')?.value||'—'}`;if($('#sumSide')) $('#sumSide').textContent=state.side||'—';if($('#sumFinish')) $('#sumFinish').textContent=finishText();if($('#sumDelivery')) $('#sumDelivery').textContent=state.delivery;if($('#sumContact')) $('#sumContact').textContent=contactText();if($('#sumFile')) $('#sumFile').textContent=state.file?`${state.file.name} · приложить к письму`:'не приложен';
       const c=completeness();if($('#completenessText')) $('#completenessText').textContent=`${c}%`;if($('#completenessBar')) $('#completenessBar').style.width=`${c}%`;if($('#managerText')) $('#managerText').textContent=managerText();syncQtyPresets();updateMissing();
     }
 
@@ -205,7 +206,7 @@
       const status=$('#fileStatus');if(!status||!f)return;const ext=(f.name.split('.').pop()||'').toLowerCase();status.className='file-status';
       if(!['pdf','jpg','jpeg','png','tif','tiff'].includes(ext)){state.file=null;status.classList.add('error');status.textContent='Неподдерживаемый формат. Используйте PDF, JPG, PNG или TIFF.';}
       else if(f.size>50*1024*1024){state.file=null;status.classList.add('error');status.textContent='Файл больше 50 МБ.';}
-      else{state.file=f;status.classList.add('ok');status.innerHTML=`<b>✓ ${esc(f.name)}</b><br>Файл добавлен к техническому заданию.`;}
+      else{state.file=f;status.classList.add('ok');status.innerHTML=`<b>✓ ${esc(f.name)}</b><br>Файл выбран. При отправке письма приложите его вручную.`;}
       update();
     }
 
@@ -218,8 +219,10 @@
     $('#size')?.addEventListener('change',syncCustomSize);$('#density')?.addEventListener('change',applyCompatibility);$('#paper')?.addEventListener('change',()=>{const p=PRODUCTS[state.product];setOpts($('#density'),p.densities);if(/Пластик|плёнка/.test($('#paper')?.value||''))setOpts($('#density'),['По материалу']);applyCompatibility();});
     const date=$('#desiredDate');if(date)date.min=todayISO();
     const file=$('#file'),drop=$('#dropzone');if(file)file.addEventListener('change',()=>file.files?.[0]&&handleFile(file.files[0]));if(drop){['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>e.preventDefault()));drop.addEventListener('drop',e=>{e.preventDefault();if(e.dataTransfer?.files?.[0])handleFile(e.dataTransfer.files[0]);});}
+    const uploadHint=drop?.querySelector('span');if(uploadHint)uploadHint.textContent='PDF, JPG, PNG, TIFF · до 50 МБ. При отправке через почту приложите его вручную.';
 
     const modal=$('#modal');let lastModalTrigger=null;
+    const modalLead=modal?.querySelector('.modal-lead');if(modalLead)modalLead.textContent='Проверьте текст и отправьте его менеджеру. Если выбрали макет, приложите его к письму вручную — mailto не может прикрепить локальный файл автоматически.';
     function closeModal(){if(!modal)return;modal.hidden=true;modal.classList.remove('show');doc.body.classList.remove('modal-open');lastModalTrigger?.focus();}
     function openModal(trigger){
       const invalid=firstInvalidStage();
@@ -233,7 +236,7 @@
   }
 
   return {
-    init,PRODUCTS,isValidQuantity,isValidPages,isValidEmail,isValidPhone,isPastDate,isCustomSize,customSizeText,canVisitStep,validateStepData,
+    init,PRODUCTS,isValidQuantity,isValidDimension,isValidPages,isValidEmail,isValidPhone,isPastDate,isCustomSize,customSizeText,canVisitStep,validateStepData,
     validateStage(index,show){return runtime?runtime.validateStage(index,show):true;},
     firstInvalidStage(){return runtime?runtime.firstInvalidStage():-1;},
     managerText(){return runtime?runtime.managerText():'';}
