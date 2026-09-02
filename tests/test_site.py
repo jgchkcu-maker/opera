@@ -82,6 +82,19 @@ class SiteStructureTests(unittest.TestCase):
         self.assertIn("data-builder-back", html)
         self.assertIn("data-summary-toggle", html)
 
+    def test_all_summary_triggers_are_bound(self):
+        html = read("builder.html")
+        ux = read("assets/builder-ux.js")
+        self.assertGreaterEqual(html.count("data-summary-toggle"), 2)
+        self.assertIn("querySelectorAll('[data-summary-toggle]')", ux)
+        self.assertRegex(ux, r"summaryToggles\.forEach")
+
+    def test_ci_runs_build_validator_before_regressions(self):
+        workflow = read(".github/workflows/ci.yml")
+        self.assertIn("python build_site.py", workflow)
+        self.assertIn("python -m unittest tests.test_site -v", workflow)
+        self.assertLess(workflow.index("python build_site.py"), workflow.index("python -m unittest tests.test_site -v"))
+
     def test_exact_source_image_mapping_is_explicit(self):
         app = read("assets/app.js")
         self.assertIn("pechat-knig-fotoknig-foto", app)
