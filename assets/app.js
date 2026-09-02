@@ -18,6 +18,7 @@
     if(!href) return null;
     let path=String(href).split('#')[0].split('?')[0].replace(/\\/g,'/');
     path=path.slice(path.lastIndexOf('/')+1).replace(/\.html?$/i,'');
+    if(path==='pechat-knig-fotoknig-foto') path='pechat-fotoalbomov';
     if(!/^(?:pechat-[a-z0-9-]+|proizvodstvo-kalendarei)$/.test(path)) return null;
     return `${ORIGIN}${path}/01.jpg`;
   }
