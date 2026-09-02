@@ -1,4 +1,6 @@
+import json
 import re
+import subprocess
 import unittest
 from pathlib import Path
 from html.parser import HTMLParser
@@ -88,6 +90,78 @@ class SiteStructureTests(unittest.TestCase):
         self.assertGreaterEqual(html.count("data-summary-toggle"), 2)
         self.assertIn("querySelectorAll('[data-summary-toggle]')", ux)
         self.assertRegex(ux, r"summaryToggles\.forEach")
+
+    def test_builder_has_custom_size_and_fast_quantity_controls(self):
+        html = read("builder.html")
+        self.assertIn('id="customSizeFields"', html)
+        self.assertIn('id="customWidth"', html)
+        self.assertIn('id="customHeight"', html)
+        self.assertGreaterEqual(html.count("data-qty-preset"), 4)
+        self.assertIn('aria-live="polite"', html)
+
+    def test_builder_uses_dedicated_polish_layer_and_one_mobile_nav(self):
+        html = read("builder.html")
+        self.assertIn('href="assets/builder-v2.css"', html)
+        self.assertEqual(html.count('class="builder-mobile-action"'), 1)
+        self.assertIn('data-mobile-next', html)
+
+    def test_builder_exposes_validation_contract_for_real_edge_cases(self):
+        probe = r"""
+const b=require('./assets/builder.js');
+const out={
+  zero:b.isValidQuantity(0),
+  negative:b.isValidQuantity(-12),
+  normal:b.isValidQuantity(500),
+  oddPages:b.isValidPages(5),
+  evenPages:b.isValidPages(20),
+  badEmail:b.isValidEmail('not-an-email'),
+  goodEmail:b.isValidEmail('client@example.ru'),
+  shortPhone:b.isValidPhone('12'),
+  goodPhone:b.isValidPhone('+7 (391) 227-21-27'),
+  past:b.isPastDate('2026-09-02','2026-09-03'),
+  future:b.isPastDate('2026-09-04','2026-09-03'),
+  lockedJump:b.canVisitStep(3,0),
+  unlockedJump:b.canVisitStep(2,2),
+  customSize:b.customSizeText(90,50)
+};
+console.log(JSON.stringify(out));
+"""
+        result = subprocess.run(
+            ["node", "-e", probe],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        data = json.loads(result.stdout)
+        self.assertFalse(data["zero"])
+        self.assertFalse(data["negative"])
+        self.assertTrue(data["normal"])
+        self.assertFalse(data["oddPages"])
+        self.assertTrue(data["evenPages"])
+        self.assertFalse(data["badEmail"])
+        self.assertTrue(data["goodEmail"])
+        self.assertFalse(data["shortPhone"])
+        self.assertTrue(data["goodPhone"])
+        self.assertTrue(data["past"])
+        self.assertFalse(data["future"])
+        self.assertFalse(data["lockedJump"])
+        self.assertTrue(data["unlockedJump"])
+        self.assertEqual(data["customSize"], "90 × 50 мм")
+
+    def test_builder_has_static_site_handoff_to_real_company_contact(self):
+        html = read("builder.html")
+        js = read("assets/builder.js")
+        self.assertIn('id="mailtoOrder"', html)
+        self.assertIn("operaprint@yandex.ru", html)
+        self.assertIn("mailto:operaprint@yandex.ru", js)
+
+    def test_builder_progress_tracks_unlocked_steps_instead_of_skipping(self):
+        ux = read("assets/builder-ux.js")
+        self.assertIn("furthest", ux)
+        self.assertRegex(ux, r"disabled\s*=\s*i\s*>\s*furthest")
+        self.assertIn("validateStage", ux)
 
     def test_ci_runs_build_validator_before_regressions(self):
         workflow = read(".github/workflows/ci.yml")
