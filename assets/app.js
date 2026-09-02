@@ -1,7 +1,7 @@
 (function(root,factory){
   const api=factory();
   if(typeof module==='object'&&module.exports) module.exports=api;
-  if(root&&root.document){root.OperaUI=api; api.init(root.document);}
+  if(root&&root.document){root.OperaUI=api;api.init(root.document);}
 })(typeof window!=='undefined'?window:null,function(){
   const ORIGIN='https://www.operaprint.ru/data/';
   const POSTPRESS=[
@@ -11,7 +11,7 @@
     ['скругление углов','11'],['сверление отверстий','12'],['конгрев','13'],
     ['ламинирование','14'],['упаковка в термопленку','15']
   ];
-  const $$=(s,c)=>Array.from(c.querySelectorAll(s));
+  const $$=(s,c)=>Array.from((c||document).querySelectorAll(s));
   const normalize=s=>String(s||'').toLowerCase().replace(/ё/g,'е').replace(/[^a-zа-я0-9]+/g,' ').trim();
 
   function getServiceImageFromHref(href){
@@ -32,40 +32,64 @@
   function ensureEnhancementStyles(doc){
     if(doc.querySelector('link[data-opera-enhancements]')) return;
     const link=doc.createElement('link');
-    link.rel='stylesheet'; link.href='assets/enhancements.css'; link.dataset.operaEnhancements='true';
+    link.rel='stylesheet';
+    link.href='assets/enhancements.css';
+    link.dataset.operaEnhancements='true';
     doc.head.appendChild(link);
   }
 
   function initMenu(doc){
-    const btn=doc.querySelector('[data-menu]'), drawer=doc.querySelector('#drawer');
-    if(!btn||!drawer) return;
-    btn.addEventListener('click',()=>{
-      const open=!drawer.classList.contains('open');
-      drawer.classList.toggle('open',open); btn.textContent=open?'×':'☰';
-      btn.setAttribute('aria-expanded',String(open));
-    });
-    drawer.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{
-      drawer.classList.remove('open'); btn.textContent='☰'; btn.setAttribute('aria-expanded','false');
-    }));
+    const btn=doc.querySelector('[data-menu]');
+    const drawer=doc.querySelector('#drawer');
+    if(!btn||!drawer||btn.dataset.menuBound==='true') return;
+    btn.dataset.menuBound='true';
+
+    const close=()=>{
+      drawer.classList.remove('open');
+      doc.body.classList.remove('menu-open');
+      btn.textContent='☰';
+      btn.setAttribute('aria-expanded','false');
+    };
+    const open=()=>{
+      drawer.classList.add('open');
+      doc.body.classList.add('menu-open');
+      btn.textContent='×';
+      btn.setAttribute('aria-expanded','true');
+    };
+    btn.addEventListener('click',()=>drawer.classList.contains('open')?close():open());
+    drawer.querySelectorAll('a').forEach(a=>a.addEventListener('click',close));
+    doc.addEventListener('keydown',e=>{if(e.key==='Escape'&&drawer.classList.contains('open')){close();btn.focus();}});
+    if(typeof window!=='undefined') window.addEventListener('resize',()=>{if(window.innerWidth>980) close();},{passive:true});
+  }
+
+  function upgradeNavCopy(doc){
+    $$('.navlinks a[href^="builder.html"],#drawer a[href^="builder.html"]',doc).forEach(a=>{a.textContent='Рассчитать заказ';});
   }
 
   function initFilters(doc){
-    const q=doc.querySelector('#serviceSearch'), filterBtns=$$('[data-filter]',doc), cards=$$('[data-service]',doc);
+    const q=doc.querySelector('#serviceSearch');
+    const buttons=$$('[data-filter]',doc);
+    const cards=$$('[data-service]',doc);
     if(!cards.length) return;
     const apply=()=>{
-      const text=(q&&q.value||'').trim().toLowerCase();
+      const text=normalize(q&&q.value);
       const active=doc.querySelector('[data-filter].active');
       const category=active?active.dataset.filter:'Все';
-      cards.forEach((card,i)=>{
-        const okText=!text||(card.dataset.search||'').includes(text);
+      cards.forEach(card=>{
+        const hay=normalize(card.dataset.search);
+        const okText=!text||hay.includes(text);
         const okCat=category==='Все'||card.dataset.category===category;
         card.hidden=!(okText&&okCat);
-        if(!card.hidden){const item=card.querySelector('.service-card'); if(item) item.style.setProperty('--reveal-delay',`${Math.min(i%6,5)*45}ms`);}
       });
+      const visible=cards.filter(card=>!card.hidden).length;
+      const count=doc.querySelector('[data-results-count]');
+      if(count) count.textContent=`Найдено: ${visible}`;
     };
     if(q) q.addEventListener('input',apply);
-    filterBtns.forEach(btn=>btn.addEventListener('click',()=>{
-      filterBtns.forEach(x=>x.classList.remove('active')); btn.classList.add('active'); apply();
+    buttons.forEach(button=>button.addEventListener('click',()=>{
+      buttons.forEach(item=>item.classList.remove('active'));
+      button.classList.add('active');
+      apply();
     }));
     apply();
   }
@@ -73,11 +97,13 @@
   function markImage(img){
     if(!img) return;
     img.decoding='async';
-    const parent=img.closest('.image-wrap,.service-photo,.post-card-media');
+    const parent=img.closest('.image-wrap,.service-photo,.post-card-media,.customer-hero-media,.intent-media');
     const loaded=()=>parent&&parent.classList.add('image-loaded');
     const failed=()=>parent&&parent.classList.add('image-error');
-    img.addEventListener('load',loaded,{once:true}); img.addEventListener('error',failed,{once:true});
+    img.addEventListener('load',loaded,{once:true});
+    img.addEventListener('error',failed,{once:true});
     if(img.complete&&img.naturalWidth) loaded();
+    if(img.complete&&!img.naturalWidth) failed();
   }
 
   function upgradeServiceImages(doc){
@@ -85,59 +111,63 @@
       const url=getServiceImageFromHref(card.getAttribute('href'));
       if(!url) return;
       let wrap=card.querySelector('.image-wrap');
-      if(!wrap){wrap=doc.createElement('div'); wrap.className='image-wrap'; card.prepend(wrap);}
+      if(!wrap){wrap=doc.createElement('div');wrap.className='image-wrap';card.prepend(wrap);}
       let img=wrap.querySelector('img');
-      if(!img){img=doc.createElement('img'); wrap.appendChild(img);}
-      img.src=url; img.loading='lazy'; img.alt=(card.querySelector('h3')&&card.querySelector('h3').textContent.trim())||'Пример продукции';
-      card.dataset.photoSource='operaprint'; markImage(img);
+      if(!img){img=doc.createElement('img');wrap.appendChild(img);}
+      img.src=url;
+      img.loading='lazy';
+      img.alt=(card.querySelector('h3')&&card.querySelector('h3').textContent.trim())||'Пример продукции';
+      card.dataset.photoSource='operaprint';
+      markImage(img);
     });
-
     const detail=doc.querySelector('.service-photo img');
     if(detail&&typeof location!=='undefined'){
       const url=getServiceImageFromHref(location.pathname);
-      if(url){detail.src=url; detail.loading='eager'; detail.dataset.photoSource='operaprint'; markImage(detail);}
+      if(url){detail.src=url;detail.loading='eager';detail.dataset.photoSource='operaprint';markImage(detail);}
     }
+    $$('img',doc).forEach(markImage);
   }
 
   function upgradePostpress(doc){
     $$('.post-card',doc).forEach(card=>{
-      const title=card.querySelector('b'); if(!title) return;
-      const url=getPostpressImage(title.textContent); if(!url) return;
-      if(card.querySelector('.post-card-media')) return;
-      const content=doc.createElement('div'); content.className='post-card-content';
+      const title=card.querySelector('b,h3');
+      if(!title) return;
+      const url=getPostpressImage(title.textContent);
+      if(!url) return;
+      if(card.querySelector('.post-card-media')){markImage(card.querySelector('.post-card-media img'));return;}
+      const content=doc.createElement('div');
+      content.className='post-card-content';
       while(card.firstChild) content.appendChild(card.firstChild);
-      const media=doc.createElement('div'); media.className='post-card-media';
-      const img=doc.createElement('img'); img.src=url; img.loading='lazy'; img.decoding='async'; img.alt=title.textContent.trim();
-      media.appendChild(img); card.append(media,content); card.dataset.photoSource='operaprint'; markImage(img);
+      const media=doc.createElement('div');
+      media.className='post-card-media';
+      const img=doc.createElement('img');
+      img.src=url;img.loading='lazy';img.alt=title.textContent.trim();
+      media.appendChild(img);card.append(media,content);markImage(img);
     });
   }
 
   function initReveals(doc){
-    const selector='.hero-grid > *,.page-hero .shell > *,.section-head,.category-card,.service-card,.info-card,.post-card,.stat,.cap-card,.contact-card,.require-card,.machine,.cta-band,.builder';
+    const selector='.customer-hero-copy,.customer-hero-media,.section-head,.intent-card,.category-card,.service-card,.info-card,.post-card,.stat,.cap-card,.contact-card,.require-card,.machine,.cta-band,.quick-calc,.order-step';
     const items=$$(selector,doc);
-    items.forEach((el,i)=>{el.classList.add('reveal-item'); el.style.setProperty('--reveal-delay',`${Math.min(i%6,5)*45}ms`);});
     const reduced=typeof matchMedia!=='undefined'&&matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if(reduced||typeof IntersectionObserver==='undefined'){items.forEach(x=>x.classList.add('is-visible')); return;}
+    if(reduced||typeof IntersectionObserver==='undefined') return;
+    doc.documentElement.classList.add('motion-ready');
+    items.forEach((el,i)=>{el.classList.add('reveal-item');el.style.setProperty('--reveal-delay',`${Math.min(i%5,4)*35}ms`);});
     const io=new IntersectionObserver(entries=>entries.forEach(entry=>{
-      if(entry.isIntersecting){entry.target.classList.add('is-visible'); io.unobserve(entry.target);}
-    }),{threshold:.12,rootMargin:'0px 0px -5% 0px'});
+      if(entry.isIntersecting){entry.target.classList.add('is-visible');io.unobserve(entry.target);}
+    }),{threshold:.08,rootMargin:'0px 0px -4% 0px'});
     items.forEach(item=>io.observe(item));
   }
 
-  function initPointerGlow(doc){
-    if(typeof matchMedia==='undefined'||!matchMedia('(hover:hover) and (pointer:fine)').matches) return;
-    $$('.service-card,.post-card,.category-card,.info-card,.cap-card',doc).forEach(card=>{
-      card.addEventListener('pointermove',e=>{
-        const r=card.getBoundingClientRect();
-        card.style.setProperty('--mx',`${((e.clientX-r.left)/r.width)*100}%`);
-        card.style.setProperty('--my',`${((e.clientY-r.top)/r.height)*100}%`);
-      });
-    });
-  }
-
   function init(doc){
-    ensureEnhancementStyles(doc); doc.documentElement.classList.add('opera-ui');
-    initMenu(doc); initFilters(doc); upgradeServiceImages(doc); upgradePostpress(doc); initReveals(doc); initPointerGlow(doc);
+    ensureEnhancementStyles(doc);
+    doc.documentElement.classList.add('opera-ui');
+    initMenu(doc);
+    upgradeNavCopy(doc);
+    initFilters(doc);
+    upgradeServiceImages(doc);
+    upgradePostpress(doc);
+    initReveals(doc);
   }
 
   return {init,getServiceImageFromHref,getPostpressImage,normalize};
