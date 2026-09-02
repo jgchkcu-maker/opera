@@ -10,8 +10,8 @@ ROOT = Path(__file__).resolve().parent
 REQUIRED = [
     "index.html", "services.html", "builder.html", "postpress.html", "contacts.html",
     "capabilities.html", "prepress.html", "requirements.html", "delivery.html",
-    "assets/styles.css", "assets/enhancements.css", "assets/app.js", "assets/builder.js",
-    "assets/builder-ux.js", "assets/catalog.js",
+    "assets/styles.css", "assets/enhancements.css", "assets/builder-v2.css", "assets/app.js",
+    "assets/builder.js", "assets/builder-ux.js", "assets/catalog.js",
 ]
 MARKERS = {
     "index.html": "Что хотите напечатать?",
@@ -20,6 +20,9 @@ MARKERS = {
     "postpress.html": "postpechatnye-raboty/15.jpg",
     "assets/app.js": "menu-open",
     "assets/enhancements.css": "prefers-reduced-motion: reduce",
+    "assets/builder-v2.css": "prefers-reduced-motion:reduce",
+    "assets/builder.js": "isValidQuantity",
+    "assets/builder-ux.js": "furthest",
 }
 
 
