@@ -7,10 +7,11 @@
   const mobileBack=document.querySelector('[data-mobile-back]');
   const mobileNext=document.querySelector('[data-mobile-next]');
   const summary=document.querySelector('.summary');
-  const summaryToggle=document.querySelector('[data-summary-toggle]');
+  const summaryToggles=[...document.querySelectorAll('[data-summary-toggle]')];
   const summaryClose=document.querySelector('[data-summary-close]');
   const backdrop=document.querySelector('[data-summary-backdrop]');
   let current=0;
+  let lastSummaryTrigger=null;
 
   function clearError(){document.querySelectorAll('.stage-error').forEach(el=>el.remove());}
   function showError(stage,message){
@@ -42,23 +43,39 @@
     const builder=document.querySelector('.builder-progress');
     if(builder&&focus) builder.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});
   }
+  function setSummaryExpanded(expanded){summaryToggles.forEach(toggle=>toggle.setAttribute('aria-expanded',String(expanded)));}
+  function openSummary(trigger){
+    if(!summary)return;
+    if(trigger) lastSummaryTrigger=trigger;
+    summary.classList.add('is-open');
+    document.body.classList.add('summary-open');
+    setSummaryExpanded(true);
+  }
+  function closeSummary(restoreFocus=false){
+    if(!summary)return;
+    summary.classList.remove('is-open');
+    document.body.classList.remove('summary-open');
+    setSummaryExpanded(false);
+    if(restoreFocus&&lastSummaryTrigger) lastSummaryTrigger.focus();
+  }
   function next(){
-    if(current===stages.length-1){openSummary();return;}
+    if(current===stages.length-1){openSummary(mobileNext);return;}
     if(valid(current)) show(current+1);
   }
   function back(){if(current>0) show(current-1);}
-  function openSummary(){if(!summary)return;summary.classList.add('is-open');document.body.classList.add('summary-open');summaryToggle&&summaryToggle.setAttribute('aria-expanded','true');}
-  function closeSummary(){if(!summary)return;summary.classList.remove('is-open');document.body.classList.remove('summary-open');summaryToggle&&summaryToggle.setAttribute('aria-expanded','false');}
 
   desktopNext.forEach(btn=>btn.addEventListener('click',next));
   desktopBack.forEach(btn=>btn.addEventListener('click',back));
   progress.forEach((btn,i)=>btn.addEventListener('click',()=>{if(i<=current||valid(current))show(i);}));
   mobileNext&&mobileNext.addEventListener('click',next);
   mobileBack&&mobileBack.addEventListener('click',back);
-  summaryToggle&&summaryToggle.addEventListener('click',()=>summary&&summary.classList.contains('is-open')?closeSummary():openSummary());
-  summaryClose&&summaryClose.addEventListener('click',closeSummary);
-  backdrop&&backdrop.addEventListener('click',closeSummary);
-  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&summary&&summary.classList.contains('is-open')){closeSummary();summaryToggle&&summaryToggle.focus();}});
+  summaryToggles.forEach(toggle=>toggle.addEventListener('click',()=>{
+    if(summary&&summary.classList.contains('is-open')) closeSummary();
+    else openSummary(toggle);
+  }));
+  summaryClose&&summaryClose.addEventListener('click',()=>closeSummary(true));
+  backdrop&&backdrop.addEventListener('click',()=>closeSummary(true));
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&summary&&summary.classList.contains('is-open'))closeSummary(true);});
   window.addEventListener('resize',()=>{if(window.innerWidth>720)closeSummary();},{passive:true});
   show(0,false);
 })();
