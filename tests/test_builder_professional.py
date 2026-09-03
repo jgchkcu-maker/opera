@@ -16,6 +16,15 @@ class ProfessionalBuilderPolishTests(unittest.TestCase):
         self.assertIn("pickerScript.addEventListener('load',loadProfessionalPolish", ux)
         self.assertIn("existingPickerScript.addEventListener('load',loadProfessionalPolish", ux)
 
+    def test_builder_preloads_picker_and_polish_without_flash(self):
+        html = read("builder.html")
+        self.assertIn('href="assets/product-picker-v3.css"', html)
+        self.assertIn('href="assets/builder-pro-v4.css"', html)
+        self.assertIn('src="assets/product-picker-v3.js"', html)
+        self.assertIn('src="assets/builder-pro-v4.js"', html)
+        self.assertLess(html.index('src="assets/product-picker-v3.js"'), html.index('src="assets/builder-pro-v4.js"'))
+        self.assertLess(html.index('src="assets/builder-pro-v4.js"'), html.index('src="assets/builder-ux.js"'))
+
     def test_mobile_step_label_sits_outside_progress_grid(self):
         js = read("assets/builder-pro-v4.js")
         self.assertIn("progress[0].parentElement?.before(mobileLabel)", js)
