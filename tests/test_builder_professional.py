@@ -81,6 +81,21 @@ class ProfessionalBuilderPolishTests(unittest.TestCase):
         self.assertIn("backdrop-filter:blur(22px) saturate(1.15)", css)
         self.assertIn("assets/brand-v5.css", app)
 
+    def test_dual_logo_colors_are_visible_in_real_interactive_states(self):
+        css = read("assets/brand-v5.css")
+        for marker in (
+            "--cyan-soft:#e5f4f6",
+            ".navlinks a:hover,.navlinks a.active",
+            ".customer-hero-notes span:before",
+            ".builder-progress button.active i",
+            ".product-picker-option.is-selected",
+            ".builder-finish-block .finish.checked",
+            ".builder-mobile-action .mobile-next",
+            "var(--cyan)",
+            "var(--magenta)",
+        ):
+            self.assertIn(marker, css)
+
 
 if __name__ == "__main__":
     unittest.main()
