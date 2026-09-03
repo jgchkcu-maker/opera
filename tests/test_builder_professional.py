@@ -13,7 +13,13 @@ class ProfessionalBuilderPolishTests(unittest.TestCase):
         ux = read("assets/builder-ux.js")
         self.assertIn("assets/builder-pro-v4.css", ux)
         self.assertIn("assets/builder-pro-v4.js", ux)
-        self.assertLess(ux.index("product-picker-v3.js"), ux.index("builder-pro-v4.js"))
+        self.assertIn("pickerScript.addEventListener('load',loadProfessionalPolish", ux)
+        self.assertIn("existingPickerScript.addEventListener('load',loadProfessionalPolish", ux)
+
+    def test_mobile_step_label_sits_outside_progress_grid(self):
+        js = read("assets/builder-pro-v4.js")
+        self.assertIn("progress[0].parentElement?.before(mobileLabel)", js)
+        self.assertNotIn("insertBefore(mobileLabel,progress[0].parentElement.firstChild)", js)
 
     def test_mobile_intro_is_task_first_and_removes_redundant_copy(self):
         js = read("assets/builder-pro-v4.js")
