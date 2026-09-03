@@ -30,12 +30,18 @@
   }
 
   function ensureEnhancementStyles(doc){
-    if(doc.querySelector('link[data-opera-enhancements]')) return;
-    const link=doc.createElement('link');
-    link.rel='stylesheet';
-    link.href='assets/enhancements.css';
-    link.dataset.operaEnhancements='true';
-    doc.head.appendChild(link);
+    const styles=[
+      ['assets/enhancements.css','operaEnhancements'],
+      ['assets/brand-v5.css','operaBrandV5']
+    ];
+    styles.forEach(([href,datasetKey])=>{
+      if(doc.querySelector(`link[href="${href}"]`)) return;
+      const link=doc.createElement('link');
+      link.rel='stylesheet';
+      link.href=href;
+      link.dataset[datasetKey]='true';
+      doc.head.appendChild(link);
+    });
   }
 
   function initMenu(doc){
