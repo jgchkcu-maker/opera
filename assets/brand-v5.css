@@ -1,4 +1,4 @@
-/* Opera-print brand v5 — restrained CMYK-derived palette + glass only where it behaves like UI chrome */
+/* Opera-print brand v5 — logo-derived cyan + magenta, with restrained CMYK support */
 :root{
   --ink:#181a1e;
   --ink2:#2a2d32;
@@ -11,7 +11,11 @@
   --red2:#9f2f63;
   --redsoft:#f7e5ed;
   --cyan:#1595a8;
+  --cyan-deep:#0f7382;
+  --cyan-soft:#e5f4f6;
   --magenta:#c13b78;
+  --magenta-deep:#922b5b;
+  --magenta-soft:#f8e7ef;
   --yellow:#d0aa36;
   --success:#317154;
   --shadow:0 22px 70px rgba(31,27,22,.095);
@@ -25,6 +29,7 @@ header{
   -webkit-backdrop-filter:blur(22px) saturate(1.15);
   border-bottom:1px solid rgba(24,26,30,.075)
 }
+.navlinks a:hover,.navlinks a.active{border-color:var(--cyan)}
 .navcta,.btn.dark{background:var(--ink);border-color:var(--ink);color:#fff}
 .btn.red{
   background:linear-gradient(135deg,#c7417d 0%,var(--magenta) 48%,#aa336b 100%);
@@ -35,7 +40,9 @@ header{
 .btn.red:hover{background:linear-gradient(135deg,#b93772 0%,var(--red2) 100%)}
 .reg{background:var(--magenta);box-shadow:0 0 0 5px rgba(193,59,120,.12)}
 .notice{border-left-color:var(--magenta);background:var(--redsoft)}
-.info-card .n,.intent-link,.service-card-open{color:var(--magenta)}
+.info-card .n{color:var(--magenta)}
+.intent-link,.service-card-open,.text-link{color:var(--cyan-deep)}
+.customer-hero-notes span:before{color:var(--cyan)}
 
 .menu-btn{
   border-color:rgba(24,26,30,.10);
@@ -55,8 +62,79 @@ header{
   border-color:rgba(49,43,37,.12)
 }
 .tag,.feature,.filterbtn,.tabs-line a{background:#fdfaf5}
-.filterbtn.active{background:var(--ink);border-color:var(--ink);color:#fff}
-:where(a,button,input,select,textarea):focus-visible{outline-color:rgba(21,149,168,.32)!important}
+.filterbtn.active{
+  background:var(--ink);
+  border-color:var(--cyan-deep);
+  color:#fff;
+  box-shadow:0 0 0 2px rgba(21,149,168,.12)
+}
+.tabs-line a:hover{border-color:rgba(21,149,168,.5);background:var(--cyan-soft)}
+:where(a,button,input,select,textarea):focus-visible{outline-color:rgba(21,149,168,.36)!important}
+
+/* Builder: cyan carries navigation/context, magenta confirms choices. */
+body.builder-page .builder-progress button.active i{
+  border-color:transparent!important;
+  background:linear-gradient(135deg,var(--cyan) 0 46%,var(--magenta) 54% 100%)!important;
+  color:#fff!important;
+  box-shadow:0 0 0 5px var(--paper),0 8px 20px rgba(21,149,168,.13),0 8px 22px rgba(193,59,120,.10)!important
+}
+body.builder-page .builder-mobile-step-label b{color:var(--cyan-deep)!important}
+body.builder-page .product-picker-option.is-selected{
+  border-color:rgba(21,149,168,.68)!important;
+  background:linear-gradient(135deg,rgba(21,149,168,.075),rgba(193,59,120,.045) 72%,#fffdfa)!important;
+  box-shadow:0 5px 18px rgba(21,149,168,.055)!important
+}
+body.builder-page .product-picker-option.is-selected .product-picker-icon{
+  background:var(--ink)!important;
+  color:#75d0dc!important;
+  box-shadow:inset 0 0 0 1px rgba(117,208,220,.14)
+}
+body.builder-page .product-picker-option.is-selected .product-picker-check{
+  border-color:var(--magenta)!important;
+  background:var(--magenta)!important;
+  color:#fff!important;
+  box-shadow:0 5px 15px rgba(193,59,120,.18)
+}
+body.builder-page .product-picker-catalog-toggle:hover .product-picker-toggle-icon,
+body.builder-page .catalog-open .product-picker-toggle-icon{
+  background:var(--cyan-soft)!important;
+  color:var(--cyan-deep)!important
+}
+body.builder-page .product-picker-search input:focus{
+  border-color:rgba(21,149,168,.62)!important;
+  box-shadow:0 0 0 4px rgba(21,149,168,.10)!important
+}
+body.builder-page .builder-finish-block .finish.checked{
+  border-color:rgba(21,149,168,.62)!important;
+  background:linear-gradient(135deg,rgba(21,149,168,.055),rgba(193,59,120,.035),#fffdfa)!important
+}
+body.builder-page .builder-finish-block .finish.checked::after{
+  border-color:var(--magenta)!important;
+  background:var(--magenta)!important;
+  color:#fff!important
+}
+
+/* iOS-like dark glass CTA: neutral first, brand tint at the edges. */
+body.builder-page .builder-mobile-action .mobile-next{
+  background:linear-gradient(112deg,#15343a 0%,#191b1f 31%,#191b1f 68%,#3a1c2b 100%)!important;
+  border:1px solid rgba(255,255,255,.11)!important;
+  color:#fff!important;
+  box-shadow:-10px 10px 28px rgba(21,149,168,.10),10px 10px 30px rgba(193,59,120,.11),inset 0 1px 0 rgba(255,255,255,.13)!important
+}
+body.builder-page .builder-mobile-action .mobile-next:active{
+  box-shadow:-5px 6px 18px rgba(21,149,168,.08),5px 6px 18px rgba(193,59,120,.08),inset 0 1px 0 rgba(255,255,255,.10)!important
+}
+body.builder-page .builder-mobile-action [data-summary-toggle][aria-expanded="true"]{
+  border-color:rgba(21,149,168,.42)!important;
+  background:rgba(229,244,246,.72)!important;
+  color:var(--cyan-deep)!important
+}
+
+@media (hover:hover) and (pointer:fine){
+  .category-card:hover,.service-card:hover,.intent-card:hover,.post-card:hover{
+    border-color:rgba(21,149,168,.28)
+  }
+}
 
 @media (max-width:980px){
   header{background:rgba(247,243,236,.84)}
