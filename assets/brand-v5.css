@@ -71,6 +71,22 @@ header{
 .tabs-line a:hover{border-color:rgba(21,149,168,.5);background:var(--cyan-soft)}
 :where(a,button,input,select,textarea):focus-visible{outline-color:rgba(21,149,168,.36)!important}
 
+/* Shared tactile motion: every button family responds the same way. */
+:where(.btn,.navcta,.menu-btn,.filterbtn,.product-picker-option,.choice-card,.delivery-choice,.finish,.pill,.builder-mobile-action button){
+  transform-origin:center;
+  transition-property:transform,box-shadow,background-color,border-color,color,opacity;
+  transition-duration:.18s;
+  transition-timing-function:cubic-bezier(.2,.8,.2,1)
+}
+:where(.btn,.navcta,.menu-btn,.filterbtn,.product-picker-option,.choice-card,.delivery-choice,.finish,.pill,.builder-mobile-action button):active{
+  transform:scale(.975)
+}
+@media (hover:hover) and (pointer:fine){
+  :where(.btn,.navcta,.menu-btn,.filterbtn,.product-picker-option,.choice-card,.delivery-choice,.finish,.pill):hover{
+    transition-duration:.22s
+  }
+}
+
 /* Builder: cyan carries navigation/context, magenta confirms choices. */
 body.builder-page .builder-progress button.active i{
   border-color:transparent!important;
@@ -142,4 +158,8 @@ body.builder-page .builder-mobile-action [data-summary-toggle][aria-expanded="tr
 
 @media (prefers-reduced-transparency:reduce){
   header,.menu-btn,.drawer.open{backdrop-filter:none;-webkit-backdrop-filter:none;background:var(--paper)}
+}
+
+@media (prefers-reduced-motion:reduce){
+  :where(.btn,.navcta,.menu-btn,.filterbtn,.product-picker-option,.choice-card,.delivery-choice,.finish,.pill,.builder-mobile-action button){transition:none!important}
 }
