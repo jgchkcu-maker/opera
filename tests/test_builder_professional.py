@@ -60,6 +60,25 @@ class ProfessionalBuilderPolishTests(unittest.TestCase):
         self.assertIn(".builder-finish-block .glyph", css)
         self.assertIn("display:none", css)
 
+    def test_mobile_action_is_glass_floating_and_safe_area_aware(self):
+        css = read("assets/builder-pro-v4.css")
+        for marker in (
+            ".builder-mobile-action",
+            "backdrop-filter",
+            "env(safe-area-inset-bottom)",
+            ".mobile-next::after",
+            "linear-gradient",
+            "pointer-events:none",
+        ):
+            self.assertIn(marker, css)
+
+    def test_global_palette_uses_logo_colors_as_primary_accents(self):
+        css = read("assets/styles.css")
+        self.assertIn("--red:#c13b78", css)
+        self.assertIn("--cyan:#1595a8", css)
+        self.assertIn("--magenta:#c13b78", css)
+        self.assertIn("backdrop-filter:blur(22px) saturate(1.15)", css)
+
 
 if __name__ == "__main__":
     unittest.main()
