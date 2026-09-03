@@ -1,4 +1,12 @@
 (()=>{
+  const pickerStyleHref='assets/product-picker-v3.css';
+  if(!document.querySelector(`link[href="${pickerStyleHref}"]`)){
+    const pickerStyle=document.createElement('link');
+    pickerStyle.rel='stylesheet';
+    pickerStyle.href=pickerStyleHref;
+    document.head.appendChild(pickerStyle);
+  }
+
   const stages=[...document.querySelectorAll('[data-builder-stage]')];
   if(!stages.length) return;
   const progress=[...document.querySelectorAll('[data-builder-progress]')];
@@ -122,4 +130,11 @@
   document.addEventListener('keydown',event=>{if(event.key==='Escape'&&summary?.classList.contains('is-open'))closeSummary(true);});
   window.addEventListener('resize',()=>{if(window.innerWidth>720)closeSummary();},{passive:true});
   show(0,false,'forward');
+
+  if(!document.querySelector('script[data-product-picker-v3]')){
+    const pickerScript=document.createElement('script');
+    pickerScript.src='assets/product-picker-v3.js';
+    pickerScript.dataset.productPickerV3='';
+    document.body.appendChild(pickerScript);
+  }
 })();
