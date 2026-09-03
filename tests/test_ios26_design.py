@@ -39,6 +39,16 @@ class IOS26DesignTests(unittest.TestCase):
         self.assertIn("scroll-snap-type:x proximity", css)
         self.assertIn("overscroll-behavior-x:contain", css)
 
+    def test_mobile_filter_scroller_avoids_viewport_math_overflow(self):
+        css = read("assets/brand-v5.css")
+        self.assertNotIn("min(100vw", css)
+        self.assertIn("width:calc(100% + 24px)", css)
+        self.assertIn("margin-inline:-12px", css)
+
+    def test_mobile_ambient_background_does_not_use_fixed_attachment(self):
+        css = read("assets/brand-v5.css")
+        self.assertIn("body{background-attachment:scroll}", css)
+
     def test_service_detail_noise_and_image_failure_are_handled(self):
         app = read("assets/app.js")
         css = read("assets/brand-v5.css")
@@ -58,6 +68,15 @@ class IOS26DesignTests(unittest.TestCase):
         self.assertIn("z-index:110", css)
         self.assertIn("z-index:140", css)
         self.assertIn(".summary::before", css)
+
+    def test_builder_drag_release_has_explicit_snap_and_dismiss_states(self):
+        ux = read("assets/builder-ux.js")
+        css = read("assets/builder-pro-v4.css")
+        self.assertIn("summary-snap-back", ux)
+        self.assertIn("summary-drag-dismiss", ux)
+        self.assertIn(".summary.summary-snap-back", css)
+        self.assertIn(".summary.summary-drag-dismiss", css)
+        self.assertIn("requestAnimationFrame", ux)
 
     def test_ios_motion_is_functional_not_infinite(self):
         css = read("assets/brand-v5.css") + read("assets/builder-pro-v4.css")
