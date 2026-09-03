@@ -96,6 +96,49 @@ class ProfessionalBuilderPolishTests(unittest.TestCase):
         ):
             self.assertIn(marker, css)
 
+    def test_summary_sheet_has_spring_open_close_and_staggered_content(self):
+        css = read("assets/builder-pro-v4.css")
+        for marker in (
+            "--motion-spring:",
+            "@keyframes summarySheetIn",
+            "@keyframes summaryBackdropIn",
+            ".summary.is-open .summary-core .sum-row",
+            "animation-delay:calc(var(--summary-row-index",
+            ".summary.is-closing",
+        ):
+            self.assertIn(marker, css)
+
+    def test_summary_colors_follow_cyan_magenta_brand_roles(self):
+        css = read("assets/builder-pro-v4.css")
+        for marker in (
+            ".summary-status",
+            "var(--pro-cyan)",
+            ".summary-submit",
+            "var(--pro-magenta)",
+            ".summary-progress .progressbar i",
+        ):
+            self.assertIn(marker, css)
+
+    def test_step_switching_has_directional_motion_and_animated_progress(self):
+        css = read("assets/builder-pro-v4.css")
+        js = read("assets/builder-ux.js")
+        for marker in (
+            "stage-swap-forward",
+            "stage-swap-back",
+            "progress-pop",
+            "progress[0].parentElement?.classList.add('is-switching')",
+        ):
+            self.assertIn(marker, css + js)
+
+    def test_press_feedback_is_shared_across_interactive_controls(self):
+        css = read("assets/brand-v5.css")
+        for marker in (
+            ":where(.btn,.navcta,.menu-btn,.filterbtn,.product-picker-option,.choice-card,.delivery-choice,.finish,.pill,.builder-mobile-action button):active",
+            "transform:scale(.975)",
+            "transition-timing-function:cubic-bezier(.2,.8,.2,1)",
+        ):
+            self.assertIn(marker, css)
+
 
 if __name__ == "__main__":
     unittest.main()
