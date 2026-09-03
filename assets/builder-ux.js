@@ -25,16 +25,31 @@
   let current=0;
   let furthest=0;
   let lastSummaryTrigger=null;
+  let summaryCloseTimer=null;
 
   const builderApi=()=>window.OperaBuilder;
   const validateStage=index=>builderApi()?.validateStage(index,true)!==false;
 
   function animateStage(stage,direction){
     if(reduced||!stage) return;
-    stage.classList.remove('enter-forward','enter-back');
+    stage.classList.remove('enter-forward','enter-back','stage-swap-forward','stage-swap-back');
     void stage.offsetWidth;
-    stage.classList.add(direction==='back'?'enter-back':'enter-forward');
-    stage.addEventListener('animationend',()=>stage.classList.remove('enter-forward','enter-back'),{once:true});
+    const cls=direction==='back'?'stage-swap-back':'stage-swap-forward';
+    stage.classList.add(cls);
+    stage.addEventListener('animationend',()=>stage.classList.remove(cls),{once:true});
+  }
+
+  function pulseProgress(){
+    if(reduced||!progress.length)return;
+    progress[0].parentElement?.classList.add('is-switching');
+    const activeIcon=progress[current]?.querySelector('i');
+    if(activeIcon){
+      activeIcon.classList.remove('progress-pop');
+      void activeIcon.offsetWidth;
+      activeIcon.classList.add('progress-pop');
+      activeIcon.addEventListener('animationend',()=>activeIcon.classList.remove('progress-pop'),{once:true});
+    }
+    window.setTimeout(()=>progress[0].parentElement?.classList.remove('is-switching'),360);
   }
 
   function updateProgress(){
@@ -46,6 +61,7 @@
       const icon=button.querySelector('i');
       if(icon) icon.textContent=i<current&&i<=furthest?'✓':String(i+1);
     });
+    pulseProgress();
     if(summarySubmit){
       const locked=furthest<stages.length-1;
       summarySubmit.disabled=locked;
@@ -77,6 +93,8 @@
   function openSummary(trigger){
     if(!summary)return;
     if(trigger)lastSummaryTrigger=trigger;
+    if(summaryCloseTimer){window.clearTimeout(summaryCloseTimer);summaryCloseTimer=null;}
+    summary.classList.remove('is-closing');
     if(!mobileQuery.matches){
       summary.classList.add('summary-pulse');
       summary.scrollIntoView({behavior:reduced?'auto':'smooth',block:'center'});
@@ -86,14 +104,23 @@
     summary.classList.add('is-open');
     document.body.classList.add('summary-open');
     setSummaryExpanded(true);
+    if(!reduced) summary.classList.add('summary-sheet-in');
+    summary.addEventListener('animationend',()=>summary.classList.remove('summary-sheet-in'),{once:true});
     summaryClose?.focus({preventScroll:true});
   }
   function closeSummary(restoreFocus=false){
     if(!summary)return;
-    summary.classList.remove('is-open');
+    const finish=()=>{
+      summary.classList.remove('is-open','is-closing','summary-sheet-in');
+      document.body.classList.remove('summary-open');
+      setSummaryExpanded(false);
+      if(restoreFocus&&lastSummaryTrigger)lastSummaryTrigger.focus();
+      summaryCloseTimer=null;
+    };
+    if(!mobileQuery.matches||reduced||!summary.classList.contains('is-open')){finish();return;}
+    summary.classList.add('is-closing');
     document.body.classList.remove('summary-open');
-    setSummaryExpanded(false);
-    if(restoreFocus&&lastSummaryTrigger)lastSummaryTrigger.focus();
+    summaryCloseTimer=window.setTimeout(finish,280);
   }
 
   function next(){
