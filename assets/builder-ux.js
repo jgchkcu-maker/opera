@@ -20,6 +20,10 @@
   const summaryClose=document.querySelector('[data-summary-close]');
   const backdrop=document.querySelector('[data-summary-backdrop]');
   const summarySubmit=document.querySelector('#sendBtn');
+  const summaryRows=[...document.querySelectorAll('[data-summary-step]')];
+  const completenessText=document.querySelector('#completenessText');
+  const completenessBar=document.querySelector('#completenessBar');
+  const stickyHeader=document.querySelector('header');
   const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
   const mobileQuery=matchMedia('(max-width:720px)');
   let current=0;
@@ -57,24 +61,30 @@
   }
 
   function updateProgress(){
-    progress.forEach((button,i)=>{
-      button.classList.toggle('active',i===current);
-      button.classList.toggle('is-complete',i<current&&i<=furthest);
-      button.setAttribute('aria-current',i===current?'step':'false');
-      button.disabled=i>furthest;
-      const icon=button.querySelector('i');
-      if(icon) icon.textContent=i<current&&i<=furthest?'✓':String(i+1);
-    });
-    pulseProgress();
-    if(summarySubmit){
-      const locked=furthest<stages.length-1;
-      summarySubmit.disabled=locked;
-      summarySubmit.setAttribute('aria-disabled',String(locked));
-      summarySubmit.textContent=locked?'Пройдите 4 шага':'Сформировать заявку';
-      summarySubmit.style.opacity=locked?'.48':'1';
-      summarySubmit.style.cursor=locked?'not-allowed':'pointer';
-    }
+  progress.forEach((button,i)=>{
+    button.classList.toggle('active',i===current);
+    button.classList.toggle('is-complete',i<current&&i<=furthest);
+    button.setAttribute('aria-current',i===current?'step':'false');
+    button.disabled=i>furthest;
+    const icon=button.querySelector('i');
+    if(icon) icon.textContent=i<current&&i<=furthest?'✓':String(i+1);
+  });
+  document.body.dataset.builderCurrent=String(current);
+  document.body.dataset.builderFurthest=String(furthest);
+  summaryRows.forEach(row=>{row.hidden=Number(row.dataset.summaryStep)>furthest;});
+  const reached=furthest+1;
+  const percent=Math.round(reached/stages.length*100);
+  if(completenessText)completenessText.textContent=`${reached} из ${stages.length}`;
+  if(completenessBar)completenessBar.style.width=`${percent}%`;
+  document.dispatchEvent(new CustomEvent('builder:progresschange',{detail:{current,furthest,reached,percent}}));
+  pulseProgress();
+  if(summarySubmit){
+    const locked=furthest<stages.length-1;
+    summarySubmit.disabled=locked;
+    summarySubmit.setAttribute('aria-disabled',String(locked));
+    summarySubmit.textContent=locked?'Продолжите заполнение':'Сформировать заявку';
   }
+}
 
   function show(index,focus=true,direction){
     const nextIndex=Math.max(0,Math.min(stages.length-1,index));
@@ -91,6 +101,12 @@
       const anchor=document.querySelector('.builder-progress');
       anchor?.scrollIntoView({behavior:reduced?'auto':'smooth',block:'start'});
     }
+  }
+
+  function syncSummaryStickyOffset(){
+    if(!summary||mobileQuery.matches)return;
+    const headerHeight=stickyHeader?.getBoundingClientRect().height||78;
+    document.body.style.setProperty('--builder-sticky-top',`${Math.ceil(headerHeight+16)}px`);
   }
 
   function setSummaryExpanded(expanded){summaryToggles.forEach(toggle=>toggle.setAttribute('aria-expanded',String(expanded)));}
@@ -239,7 +255,9 @@
     if(event.detail?.validate)window.OperaBuilder?.validateStage(index,true);
   });
   document.addEventListener('keydown',event=>{if(event.key==='Escape'&&summary?.classList.contains('is-open'))closeSummary(true);});
-  window.addEventListener('resize',()=>{if(window.innerWidth>720){resetSummaryDrag();closeSummary();}},{passive:true});
+  window.addEventListener('resize',()=>{syncSummaryStickyOffset();if(window.innerWidth>720){resetSummaryDrag();closeSummary();}},{passive:true});
+  if(stickyHeader&&'ResizeObserver' in window)new ResizeObserver(syncSummaryStickyOffset).observe(stickyHeader);
+  syncSummaryStickyOffset();
   bindSummaryDrag();
   show(0,false,'forward');
 
