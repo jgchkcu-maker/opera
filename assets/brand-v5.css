@@ -237,6 +237,7 @@ body.builder-page .builder-mobile-action [data-summary-toggle][aria-expanded="tr
 }
 
 @media (max-width:720px){
+  body{background-attachment:scroll}
   .shell{width:min(100% - 24px,1220px)}
   .customer-hero-media{border-radius:28px}
   .customer-hero-panel{left:12px;right:12px;bottom:12px;border-radius:20px}
@@ -244,8 +245,8 @@ body.builder-page .builder-mobile-action [data-summary-toggle][aria-expanded="tr
   .filterbar{display:grid!important;grid-template-columns:1fr!important;gap:8px!important;overflow:visible!important}
   .filterbar input{width:100%;min-width:0}
   .filter-scroller{
-    width:calc(100vw - 24px);
-    margin-inline:calc((100vw - min(100vw - 24px,1220px)) / -2);
+    width:calc(100% + 24px);
+    margin-inline:-12px;
     padding:2px 12px 5px;
     overflow-x:auto;
     overscroll-behavior-x:contain;
