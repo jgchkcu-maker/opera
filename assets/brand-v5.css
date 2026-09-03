@@ -1,0 +1,67 @@
+/* Opera-print brand v5 — restrained CMYK-derived palette + glass only where it behaves like UI chrome */
+:root{
+  --ink:#181a1e;
+  --ink2:#2a2d32;
+  --muted:#6c6e73;
+  --paper:#f5f1ea;
+  --surface:#fffdfa;
+  --surface2:#f9f5ef;
+  --line:#ded7ce;
+  --red:#c13b78;
+  --red2:#9f2f63;
+  --redsoft:#f7e5ed;
+  --cyan:#1595a8;
+  --magenta:#c13b78;
+  --yellow:#d0aa36;
+  --success:#317154;
+  --shadow:0 22px 70px rgba(31,27,22,.095);
+  --shadow-sm:0 9px 28px rgba(31,27,22,.06)
+}
+
+body{background:var(--paper);color:var(--ink)}
+header{
+  background:rgba(247,243,236,.78);
+  backdrop-filter:blur(22px) saturate(1.15);
+  -webkit-backdrop-filter:blur(22px) saturate(1.15);
+  border-bottom:1px solid rgba(24,26,30,.075)
+}
+.navcta,.btn.dark{background:var(--ink);border-color:var(--ink);color:#fff}
+.btn.red{
+  background:linear-gradient(135deg,#c7417d 0%,var(--magenta) 48%,#aa336b 100%);
+  border-color:var(--magenta);
+  color:#fff;
+  box-shadow:0 10px 26px rgba(193,59,120,.16)
+}
+.btn.red:hover{background:linear-gradient(135deg,#b93772 0%,var(--red2) 100%)}
+.reg{background:var(--magenta);box-shadow:0 0 0 5px rgba(193,59,120,.12)}
+.notice{border-left-color:var(--magenta);background:var(--redsoft)}
+.info-card .n,.intent-link,.service-card-open{color:var(--magenta)}
+
+.menu-btn{
+  border-color:rgba(24,26,30,.10);
+  background:rgba(255,255,255,.58);
+  backdrop-filter:blur(16px) saturate(1.18);
+  -webkit-backdrop-filter:blur(16px) saturate(1.18);
+  box-shadow:0 8px 24px rgba(31,27,22,.07),inset 0 1px 0 rgba(255,255,255,.72)
+}
+.drawer.open{
+  border-radius:0 0 20px 20px;
+  background:rgba(247,243,236,.86);
+  backdrop-filter:blur(20px) saturate(1.12);
+  -webkit-backdrop-filter:blur(20px) saturate(1.12)
+}
+
+.category-card,.service-card,.info-card,.cap-card,.contact-card,.require-card,.intent-card,.trust-main,.trust-links,.order-step{
+  border-color:rgba(49,43,37,.12)
+}
+.tag,.feature,.filterbtn,.tabs-line a{background:#fdfaf5}
+.filterbtn.active{background:var(--ink);border-color:var(--ink);color:#fff}
+:where(a,button,input,select,textarea):focus-visible{outline-color:rgba(21,149,168,.32)!important}
+
+@media (max-width:980px){
+  header{background:rgba(247,243,236,.84)}
+}
+
+@media (prefers-reduced-transparency:reduce){
+  header,.menu-btn,.drawer.open{backdrop-filter:none;-webkit-backdrop-filter:none;background:var(--paper)}
+}
