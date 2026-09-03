@@ -18,16 +18,22 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
+          import re
 
           def rep(path, old, new):
               p=Path(path); text=p.read_text(encoding='utf-8')
-              if old in text:
-                  p.write_text(text.replace(old,new,1),encoding='utf-8'); return
-              if new in text: return
-              raise SystemExit(f'missing source marker in {path}: {old[:80]!r}')
+              if new in text and old not in text: return
+              if old not in text: raise SystemExit(f'missing source marker in {path}: {old[:90]!r}')
+              p.write_text(text.replace(old,new,1),encoding='utf-8')
 
-          # Summary markup: future-step defaults stay hidden until the user reaches that step.
-          pairs=[
+          def sub(path, pattern, new, sentinel):
+              p=Path(path); text=p.read_text(encoding='utf-8')
+              if sentinel in text: return
+              text2,n=re.subn(pattern,lambda _:new,text,count=1,flags=re.S)
+              if n!=1: raise SystemExit(f'pattern mismatch in {path}: {pattern[:90]!r}')
+              p.write_text(text2,encoding='utf-8')
+
+          html_pairs=[
             ('<div class="sum-row"><span>Формат</span><b id="sumSize">—</b></div>','<div class="sum-row" data-summary-step="1"><span>Формат</span><b id="sumSize">—</b></div>'),
             ('<div class="sum-row"><span>Тираж</span><b id="sumQty">—</b></div>','<div class="sum-row" data-summary-step="1"><span>Тираж</span><b id="sumQty">—</b></div>'),
             ('<div class="sum-row is-hidden" id="sumPagesRow"><span>Страниц</span><b id="sumPages">—</b></div>','<div class="sum-row is-hidden" id="sumPagesRow" data-summary-step="1"><span>Страниц</span><b id="sumPages">—</b></div>'),
@@ -40,33 +46,12 @@ jobs:
             ('<div class="summary-progress"><div><span>Готовность заявки</span><b id="completenessText">0%</b></div><div class="progressbar"><i id="completenessBar"></i></div></div>','<div class="summary-progress"><div><span>Прогресс</span><b id="completenessText">1 из 4</b></div><div class="progressbar"><i id="completenessBar"></i></div></div>'),
             ('<p class="summary-note">Это не окончательная цена. Менеджер проверит технологию, макет и подтвердит стоимость и срок.</p>','<p class="summary-note">Менеджер проверит макет, стоимость и срок перед запуском.</p>'),
             ('        <details class="manager-preview"><summary>Что получит менеджер</summary><pre id="managerText"></pre></details>\n','')]
-          for old,new in pairs: rep('builder.html',old,new)
+          for old,new in html_pairs: rep('builder.html',old,new)
 
-          # Navigation owns progress because it knows which stages are actually reached.
           rep('assets/builder-ux.js',
               "  const summarySubmit=document.querySelector('#sendBtn');\n",
               "  const summarySubmit=document.querySelector('#sendBtn');\n  const summaryRows=[...document.querySelectorAll('[data-summary-step]')];\n  const completenessText=document.querySelector('#completenessText');\n  const completenessBar=document.querySelector('#completenessBar');\n  const stickyHeader=document.querySelector('header');\n")
-          old="""  function updateProgress(){
-            progress.forEach((button,i)=>{
-              button.classList.toggle('active',i===current);
-              button.classList.toggle('is-complete',i<current&&i<=furthest);
-              button.setAttribute('aria-current',i===current?'step':'false');
-              button.disabled=i>furthest;
-              const icon=button.querySelector('i');
-              if(icon) icon.textContent=i<current&&i<=furthest?'✓':String(i+1);
-            });
-            pulseProgress();
-            if(summarySubmit){
-              const locked=furthest<stages.length-1;
-              summarySubmit.disabled=locked;
-              summarySubmit.setAttribute('aria-disabled',String(locked));
-              summarySubmit.textContent=locked?'Пройдите 4 шага':'Сформировать заявку';
-              summarySubmit.style.opacity=locked?'.48':'1';
-              summarySubmit.style.cursor=locked?'not-allowed':'pointer';
-            }
-          }
-          """.replace('          ','')
-          new="""  function updateProgress(){
+          progress="""  function updateProgress(){
             progress.forEach((button,i)=>{
               button.classList.toggle('active',i===current);
               button.classList.toggle('is-complete',i<current&&i<=furthest);
@@ -91,8 +76,9 @@ jobs:
               summarySubmit.textContent=locked?'Продолжите заполнение':'Сформировать заявку';
             }
           }
+
           """.replace('          ','')
-          rep('assets/builder-ux.js',old,new)
+          sub('assets/builder-ux.js',r"  function updateProgress\(\)\{.*?\n  \}\n\n(?=  function show)",progress,'const reached=furthest+1')
           rep('assets/builder-ux.js',
               "  function setSummaryExpanded(expanded){summaryToggles.forEach(toggle=>toggle.setAttribute('aria-expanded',String(expanded)));}\n",
               "  function syncSummaryStickyOffset(){\n    if(!summary||mobileQuery.matches)return;\n    const headerHeight=stickyHeader?.getBoundingClientRect().height||78;\n    document.body.style.setProperty('--builder-sticky-top',`${Math.ceil(headerHeight+16)}px`);\n  }\n\n  function setSummaryExpanded(expanded){summaryToggles.forEach(toggle=>toggle.setAttribute('aria-expanded',String(expanded)));}\n")
@@ -100,29 +86,10 @@ jobs:
               "  window.addEventListener('resize',()=>{if(window.innerWidth>720){resetSummaryDrag();closeSummary();}},{passive:true});\n  bindSummaryDrag();\n  show(0,false,'forward');\n",
               "  window.addEventListener('resize',()=>{syncSummaryStickyOffset();if(window.innerWidth>720){resetSummaryDrag();closeSummary();}},{passive:true});\n  if(stickyHeader&&'ResizeObserver' in window)new ResizeObserver(syncSummaryStickyOffset).observe(stickyHeader);\n  syncSummaryStickyOffset();\n  bindSummaryDrag();\n  show(0,false,'forward');\n")
 
-          # Builder validation still creates the e-mail, but it no longer owns the progress meter.
           rep('assets/builder.js',
               "  const FEATURED=['businessCards','leaflets','catalogs','stickers','menus','books','calendars'];\n",
               "  const FEATURED=['businessCards','leaflets','catalogs','stickers','menus','books','calendars'];\n  const SUMMARY_NEXT_HINTS=['Перейдите к размеру и тиражу.','Проверьте размер и тираж, затем продолжите.','Уточните материал и печать.','Добавьте отделку и контакт.'];\n")
-          old="""    function completeness(){
-            const p=PRODUCTS[state.product];
-            const checks=[Boolean(state.product),Boolean($('#size')?.value),isValidQuantity($('#qty')?.value),Boolean($('#paper')?.value),Boolean(state.side),Boolean($('#name')?.value.trim()),Boolean($('#phone')?.value.trim()||$('#email')?.value.trim()),Boolean(state.delivery)];
-            if(isCustomSize($('#size')?.value)) checks.push(isValidDimension($('#customWidth')?.value)&&isValidDimension($('#customHeight')?.value));
-            if(p.pages) checks.push(isValidPages($('#pages')?.value));
-            if(state.delivery.startsWith('Курьер')) checks.push(Boolean($('#address')?.value.trim()));
-            return Math.round(checks.filter(Boolean).length/checks.length*100);
-          }
-
-          """.replace('          ','')
-          rep('assets/builder.js',old,'')
-          old="""    function updateMissing(){
-            const errors=allErrors();const list=$('#missingList'),box=$('#summaryMissing'),status=$('#summaryStatus');
-            if(list) list.innerHTML=(errors.length?errors.slice(0,4):['Все обязательные данные заполнены.']).map(x=>`<li>${esc(x)}</li>`).join('');
-            if(box) box.classList.toggle('ready',!errors.length);
-            if(status){status.textContent=errors.length?'Нужно заполнить':'Готово';status.classList.toggle('ready',!errors.length);}
-          }
-          """.replace('          ','')
-          new="""    function updateMissing(){
+          missing="""    function updateMissing(){
             const furthest=Math.max(0,Math.min(3,Number(doc.body?.dataset.builderFurthest||0)));
             const current=Math.max(0,Math.min(3,Number(doc.body?.dataset.builderCurrent||0)));
             const finalErrors=allErrors();
@@ -134,16 +101,14 @@ jobs:
             if(box) box.classList.toggle('ready',ready);
             if(status){status.textContent=ready?'Готово':furthest<3?'В процессе':'Нужно заполнить';status.classList.toggle('ready',ready);}
           }
+
           """.replace('          ','')
-          rep('assets/builder.js',old,new)
-          rep('assets/builder.js',
-              "      const c=completeness();if($('#completenessText')) $('#completenessText').textContent=`${c}%`;if($('#completenessBar')) $('#completenessBar').style.width=`${c}%`;if($('#managerText')) $('#managerText').textContent=managerText();syncQtyPresets();updateMissing();\n",
-              "      syncQtyPresets();updateMissing();\n")
+          sub('assets/builder.js',r"    function completeness\(\)\{.*?\n    \}\n\n    function updateMissing\(\)\{.*?\n    \}\n\n",missing,'const errors=furthest<3?')
+          sub('assets/builder.js',r"      const c=completeness\(\);.*?syncQtyPresets\(\);updateMissing\(\);\n","      syncQtyPresets();updateMissing();\n",'function completeness()')
           rep('assets/builder.js',
               "    const modal=$('#modal');let lastModalTrigger=null;\n",
               "    doc.addEventListener('builder:progresschange',update);\n\n    const modal=$('#modal');let lastModalTrigger=null;\n")
 
-          # Final CSS overrides: high contrast and desktop sticky panel stays below header.
           p=Path('assets/builder-pro-v4.css'); css=p.read_text(encoding='utf-8')
           marker='/* Builder summary clarity fix */'
           if marker not in css:
