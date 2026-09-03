@@ -50,26 +50,58 @@
     if(!btn||!drawer||btn.dataset.menuBound==='true') return;
     btn.dataset.menuBound='true';
 
-    const close=()=>{
-      drawer.classList.remove('open');
-      doc.body.classList.remove('menu-open');
-      btn.textContent='☰';
-      btn.setAttribute('aria-expanded','false');
+    const setOpen=open=>{
+      drawer.classList.toggle('open',open);
+      drawer.dataset.open=String(open);
+      doc.body.classList.toggle('menu-open',open);
+      btn.textContent=open?'×':'☰';
+      btn.setAttribute('aria-expanded',String(open));
+      btn.setAttribute('aria-label',open?'Закрыть меню':'Открыть меню');
     };
-    const open=()=>{
-      drawer.classList.add('open');
-      doc.body.classList.add('menu-open');
-      btn.textContent='×';
-      btn.setAttribute('aria-expanded','true');
-    };
+    const close=()=>setOpen(false);
+    const open=()=>setOpen(true);
+
     btn.addEventListener('click',()=>drawer.classList.contains('open')?close():open());
     drawer.querySelectorAll('a').forEach(a=>a.addEventListener('click',close));
-    doc.addEventListener('keydown',e=>{if(e.key==='Escape'&&drawer.classList.contains('open')){close();btn.focus();}});
+    doc.addEventListener('keydown',e=>{
+      if(e.key==='Escape'&&drawer.classList.contains('open')){
+        close();
+        btn.focus({preventScroll:true});
+      }
+    });
     if(typeof window!=='undefined') window.addEventListener('resize',()=>{if(window.innerWidth>980) close();},{passive:true});
+    setOpen(false);
   }
 
   function upgradeNavCopy(doc){
     $$('.navlinks a[href^="builder.html"],#drawer a[href^="builder.html"]',doc).forEach(a=>{a.textContent='Рассчитать заказ';});
+  }
+
+  function initFilterScroller(doc){
+    const bar=doc.querySelector('.filterbar');
+    if(!bar||bar.querySelector('.filter-scroller')) return;
+    const buttons=$$('[data-filter]',bar);
+    if(!buttons.length) return;
+    const scroller=doc.createElement('div');
+    scroller.className='filter-scroller';
+    scroller.setAttribute('aria-label','Категории продукции');
+    buttons[0].before(scroller);
+    buttons.forEach(button=>scroller.appendChild(button));
+  }
+
+  function ensureCatalogueEmpty(doc){
+    const grid=doc.querySelector('.services-grid');
+    if(!grid) return null;
+    let empty=doc.querySelector('.catalogue-empty');
+    if(empty) return empty;
+    empty=doc.createElement('div');
+    empty.className='catalogue-empty';
+    empty.hidden=true;
+    empty.setAttribute('role','status');
+    empty.setAttribute('aria-live','polite');
+    empty.innerHTML='<b>Ничего не нашли</b><span>Попробуйте другое название или сбросьте категорию на «Все».</span>';
+    grid.after(empty);
+    return empty;
   }
 
   function initFilters(doc){
@@ -77,6 +109,8 @@
     const buttons=$$('[data-filter]',doc);
     const cards=$$('[data-service]',doc);
     if(!cards.length) return;
+    const empty=ensureCatalogueEmpty(doc);
+    const reduced=typeof matchMedia!=='undefined'&&matchMedia('(prefers-reduced-motion: reduce)').matches;
     const apply=()=>{
       const text=normalize(q&&q.value);
       const active=doc.querySelector('[data-filter].active');
@@ -90,22 +124,25 @@
       const visible=cards.filter(card=>!card.hidden).length;
       const count=doc.querySelector('[data-results-count]');
       if(count) count.textContent=`Найдено: ${visible}`;
+      if(empty) empty.hidden=visible!==0;
     };
     if(q) q.addEventListener('input',apply);
     buttons.forEach(button=>button.addEventListener('click',()=>{
       buttons.forEach(item=>item.classList.remove('active'));
       button.classList.add('active');
+      if(button.closest('.filter-scroller')) button.scrollIntoView({behavior:reduced?'auto':'smooth',block:'nearest',inline:'center'});
       apply();
     }));
     apply();
   }
 
   function markImage(img){
-    if(!img) return;
+    if(!img||img.dataset.operaImageBound==='true') return;
+    img.dataset.operaImageBound='true';
     img.decoding='async';
     const parent=img.closest('.image-wrap,.service-photo,.post-card-media,.customer-hero-media,.intent-media');
-    const loaded=()=>parent&&parent.classList.add('image-loaded');
-    const failed=()=>parent&&parent.classList.add('image-error');
+    const loaded=()=>{if(parent){parent.classList.add('image-loaded');parent.classList.remove('image-error');}};
+    const failed=()=>{if(parent){parent.classList.add('image-error');parent.classList.remove('image-loaded');}};
     img.addEventListener('load',loaded,{once:true});
     img.addEventListener('error',failed,{once:true});
     if(img.complete&&img.naturalWidth) loaded();
@@ -132,6 +169,27 @@
       if(url){detail.src=url;detail.loading='eager';detail.dataset.photoSource='operaprint';markImage(detail);}
     }
     $$('img',doc).forEach(markImage);
+  }
+
+  function upgradeServiceDetails(doc){
+    const detail=doc.querySelector('.service-detail');
+    const featureList=detail?.querySelector('.feature-list');
+    if(!detail||!featureList||detail.dataset.serviceDetailUpgraded==='true') return;
+    detail.dataset.serviceDetailUpgraded='true';
+
+    const helpers=$$('.feature span',featureList);
+    const helperText=helpers.map(span=>normalize(span.textContent));
+    const sameHelper=helperText.length>1&&new Set(helperText).size===1;
+    const generic=sameHelper&&/параметр можно указать|оставить на уточнение менеджеру/.test(helperText[0]);
+    if(generic){
+      helpers.forEach(span=>span.remove());
+      const guidance=doc.createElement('div');
+      guidance.className='service-guidance';
+      guidance.textContent='Не уверены в материале или отделке? Выберите понятные параметры в расчёте — спорные технические детали менеджер проверит перед запуском.';
+      featureList.after(guidance);
+    }
+
+    $$('.actions a[href^="builder.html"]',detail).forEach(a=>{a.textContent='Рассчитать заказ';});
   }
 
   function upgradePostpress(doc){
@@ -170,11 +228,13 @@
     doc.documentElement.classList.add('opera-ui');
     initMenu(doc);
     upgradeNavCopy(doc);
+    initFilterScroller(doc);
     initFilters(doc);
     upgradeServiceImages(doc);
+    upgradeServiceDetails(doc);
     upgradePostpress(doc);
     initReveals(doc);
   }
 
-  return {init,getServiceImageFromHref,getPostpressImage,normalize};
+  return {init,getServiceImageFromHref,getPostpressImage,normalize,initFilterScroller,upgradeServiceDetails};
 });
