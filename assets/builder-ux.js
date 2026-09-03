@@ -1,11 +1,12 @@
 (()=>{
-  const pickerStyleHref='assets/product-picker-v3.css';
-  if(!document.querySelector(`link[href="${pickerStyleHref}"]`)){
-    const pickerStyle=document.createElement('link');
-    pickerStyle.rel='stylesheet';
-    pickerStyle.href=pickerStyleHref;
-    document.head.appendChild(pickerStyle);
-  }
+  const polishStyles=['assets/product-picker-v3.css','assets/builder-pro-v4.css'];
+  polishStyles.forEach(href=>{
+    if(document.querySelector(`link[href="${href}"]`))return;
+    const style=document.createElement('link');
+    style.rel='stylesheet';
+    style.href=href;
+    document.head.appendChild(style);
+  });
 
   const stages=[...document.querySelectorAll('[data-builder-stage]')];
   if(!stages.length) return;
@@ -131,10 +132,26 @@
   window.addEventListener('resize',()=>{if(window.innerWidth>720)closeSummary();},{passive:true});
   show(0,false,'forward');
 
-  if(!document.querySelector('script[data-product-picker-v3]')){
+  function loadProfessionalPolish(){
+    if(document.querySelector('script[data-builder-pro-v4]'))return;
+    const script=document.createElement('script');
+    script.src='assets/builder-pro-v4.js';
+    script.dataset.builderProV4='';
+    script.async=false;
+    document.body.appendChild(script);
+  }
+
+  const existingPickerScript=document.querySelector('script[data-product-picker-v3]');
+  if(!existingPickerScript){
     const pickerScript=document.createElement('script');
     pickerScript.src='assets/product-picker-v3.js';
     pickerScript.dataset.productPickerV3='';
+    pickerScript.async=false;
+    pickerScript.addEventListener('load',loadProfessionalPolish,{once:true});
     document.body.appendChild(pickerScript);
+  }else if(document.querySelector('[data-product-picker-v3]')){
+    loadProfessionalPolish();
+  }else{
+    existingPickerScript.addEventListener('load',loadProfessionalPolish,{once:true});
   }
 })();
