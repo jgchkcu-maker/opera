@@ -1,5 +1,5 @@
 (()=>{
-  const polishStyles=['assets/product-picker-v3.css','assets/builder-pro-v4.css'];
+  const polishStyles=['assets/product-picker-v3.css','assets/builder-pro-v4.css','assets/smart-ordering.css'];
   polishStyles.forEach(href=>{
     if(document.querySelector(`link[href="${href}"]`))return;
     const style=document.createElement('link');
@@ -158,6 +158,16 @@
   document.addEventListener('keydown',event=>{if(event.key==='Escape'&&summary?.classList.contains('is-open'))closeSummary(true);});
   window.addEventListener('resize',()=>{if(window.innerWidth>720)closeSummary();},{passive:true});
   show(0,false,'forward');
+
+  function loadSmartOrdering(){
+    if(document.querySelector('script[data-smart-ordering]'))return;
+    const script=document.createElement('script');
+    script.src='assets/smart-ordering.js';
+    script.setAttribute('data-smart-ordering','');
+    script.async=false;
+    document.body.appendChild(script);
+  }
+  loadSmartOrdering();
 
   function loadProfessionalPolish(){
     if(document.querySelector('script[data-builder-pro-v4]'))return;
