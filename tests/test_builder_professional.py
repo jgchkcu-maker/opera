@@ -74,12 +74,14 @@ class ProfessionalBuilderPolishTests(unittest.TestCase):
 
     def test_global_palette_uses_logo_colors_as_primary_accents(self):
         css = read("assets/brand-v5.css")
+        entry = read("assets/styles.css")
         app = read("assets/app.js")
         self.assertIn("--red:#c13b78", css)
         self.assertIn("--cyan:#1595a8", css)
         self.assertIn("--magenta:#c13b78", css)
         self.assertIn("backdrop-filter:blur(22px) saturate(1.15)", css)
-        self.assertIn("assets/brand-v5.css", app)
+        self.assertIn('@import url("brand-v5.css");', entry)
+        self.assertNotIn("ensureEnhancementStyles", app)
 
     def test_dual_logo_colors_are_visible_in_real_interactive_states(self):
         css = read("assets/brand-v5.css")
