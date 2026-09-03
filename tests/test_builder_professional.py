@@ -121,6 +121,65 @@ class ProfessionalBuilderPolishTests(unittest.TestCase):
         ):
             self.assertIn(marker, css)
 
+    def test_summary_progress_tracks_reached_steps_not_prefilled_future_defaults(self):
+        ux = read("assets/builder-ux.js")
+        builder = read("assets/builder.js")
+        self.assertIn("const reached=furthest+1", ux)
+        self.assertIn("const percent=Math.round(reached/stages.length*100)", ux)
+        self.assertIn("completenessText", ux)
+        self.assertIn("completenessBar", ux)
+        self.assertNotIn("function completeness()", builder)
+
+    def test_summary_only_reveals_rows_after_their_step_is_reached(self):
+        html = read("builder.html")
+        ux = read("assets/builder-ux.js")
+        css = read("assets/builder-pro-v4.css")
+        for step in (1, 2, 3):
+            self.assertIn(f'data-summary-step="{step}"', html)
+        self.assertIn("[data-summary-step]", ux)
+        self.assertIn("row.hidden=Number(row.dataset.summaryStep)>furthest", ux)
+        self.assertIn(".sum-row[hidden]", css)
+
+    def test_summary_early_state_prompts_for_next_step_instead_of_future_contacts(self):
+        builder = read("assets/builder.js")
+        for marker in (
+            "SUMMARY_NEXT_HINTS",
+            "Перейдите к размеру и тиражу.",
+            "Уточните материал и печать.",
+            "Добавьте отделку и контакт.",
+            "furthest<3",
+        ):
+            self.assertIn(marker, builder)
+
+    def test_summary_sticky_offset_is_measured_from_the_real_header(self):
+        ux = read("assets/builder-ux.js")
+        css = read("assets/builder-pro-v4.css")
+        for marker in (
+            "syncSummaryStickyOffset",
+            "getBoundingClientRect().height",
+            "--builder-sticky-top",
+            "ResizeObserver",
+        ):
+            self.assertIn(marker, ux)
+        self.assertIn("top:var(--builder-sticky-top", css)
+        self.assertIn("max-height:calc(100dvh - var(--builder-sticky-top", css)
+
+    def test_summary_light_surfaces_keep_text_dark_and_readable(self):
+        css = read("assets/builder-pro-v4.css")
+        for marker in (
+            ".summary-progress>div:first-child{color:#5f5b56",
+            ".summary-progress b{color:var(--pro-ink)",
+            ".summary-missing{color:#5f3b4b",
+            ".summary-note{color:#66615b",
+            ".summary-submit:disabled",
+        ):
+            self.assertIn(marker, css)
+
+    def test_manager_preview_is_removed_from_customer_summary(self):
+        html = read("builder.html")
+        self.assertNotIn("manager-preview", html)
+        self.assertNotIn("Что получит менеджер", html)
+
     def test_step_switching_has_directional_motion_and_animated_progress(self):
         css = read("assets/builder-pro-v4.css")
         js = read("assets/builder-ux.js")

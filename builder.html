@@ -121,21 +121,20 @@
         <div class="summary-toggle-row"><div class="summary-mobile-title">Ваш заказ</div><button type="button" data-summary-close aria-label="Закрыть итог">×</button></div>
         <div class="summary-head"><div><span class="summary-kicker">Ваш заказ</span><h3 id="sumProduct">—</h3></div><span class="summary-status" id="summaryStatus">Заполняется</span></div>
         <div class="summary-core">
-          <div class="sum-row"><span>Формат</span><b id="sumSize">—</b></div>
-          <div class="sum-row"><span>Тираж</span><b id="sumQty">—</b></div>
-          <div class="sum-row is-hidden" id="sumPagesRow"><span>Страниц</span><b id="sumPages">—</b></div>
-          <div class="sum-row"><span>Материал</span><b id="sumPaper">—</b></div>
-          <div class="sum-row"><span>Печать</span><b id="sumSide">—</b></div>
-          <div class="sum-row"><span>Обработка</span><b id="sumFinish">—</b></div>
-          <div class="sum-row"><span>Получение</span><b id="sumDelivery">—</b></div>
-          <div class="sum-row"><span>Контакт</span><b id="sumContact">не указан</b></div>
-          <div class="sum-row"><span>Макет</span><b id="sumFile">не приложен</b></div>
+          <div class="sum-row" data-summary-step="1"><span>Формат</span><b id="sumSize">—</b></div>
+          <div class="sum-row" data-summary-step="1"><span>Тираж</span><b id="sumQty">—</b></div>
+          <div class="sum-row is-hidden" id="sumPagesRow" data-summary-step="1"><span>Страниц</span><b id="sumPages">—</b></div>
+          <div class="sum-row" data-summary-step="2"><span>Материал</span><b id="sumPaper">—</b></div>
+          <div class="sum-row" data-summary-step="2"><span>Печать</span><b id="sumSide">—</b></div>
+          <div class="sum-row" data-summary-step="3"><span>Обработка</span><b id="sumFinish">—</b></div>
+          <div class="sum-row" data-summary-step="3"><span>Получение</span><b id="sumDelivery">—</b></div>
+          <div class="sum-row" data-summary-step="3"><span>Контакт</span><b id="sumContact">не указан</b></div>
+          <div class="sum-row" data-summary-step="3"><span>Макет</span><b id="sumFile">не приложен</b></div>
         </div>
-        <div class="summary-progress"><div><span>Готовность заявки</span><b id="completenessText">0%</b></div><div class="progressbar"><i id="completenessBar"></i></div></div>
+        <div class="summary-progress"><div><span>Прогресс</span><b id="completenessText">1 из 4</b></div><div class="progressbar"><i id="completenessBar"></i></div></div>
         <div class="summary-missing" id="summaryMissing" aria-live="polite"><b>Осталось заполнить</b><ul id="missingList"><li>Основные параметры заказа</li></ul></div>
         <button class="btn summary-submit" id="sendBtn" type="button">Сформировать заявку</button>
-        <p class="summary-note">Это не окончательная цена. Менеджер проверит технологию, макет и подтвердит стоимость и срок.</p>
-        <details class="manager-preview"><summary>Что получит менеджер</summary><pre id="managerText"></pre></details>
+        <p class="summary-note">Менеджер проверит макет, стоимость и срок перед запуском.</p>
       </aside>
     </div>
   </div>

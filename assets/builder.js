@@ -24,6 +24,7 @@
     calendars:{name:'Календари',hint:'Конструкция зависит от типа календаря; для настенных вариантов обычно нужны пружина и отверстие.',sizes:['Настенный A3','Настенный A4','Настольный домик','Карманный','Свой размер'],papers:['Мелованная бумага / картон','Дизайнерская бумага'],densities:['170 г/м²','200 г/м²','250 г/м²','300 г/м²'],sides:['4+0 · одна сторона','4+4 · две стороны'],finishes:['holes','laminate','collect'],clear:true,pages:false,bindings:['Без скрепления','Навивка на пружину']}
   };
   const FEATURED=['businessCards','leaflets','catalogs','stickers','menus','books','calendars'];
+  const SUMMARY_NEXT_HINTS=['Перейдите к размеру и тиражу.','Проверьте размер и тираж, затем продолжите.','Уточните материал и печать.','Добавьте отделку и контакт.'];
   const CARD_META={
     businessCards:['▣','Визитки','для контактов и встреч'],
     leaflets:['▤','Листовки / флаеры','для рекламы и раздачи'],
@@ -180,26 +181,23 @@
       return `Новая заявка · ${p.name}\nФормат: ${sizeText()}\nТираж: ${$('#qty')?.value||'—'} шт.${p.pages?`\nСтраниц: ${$('#pages')?.value||'—'}`:''}\nМатериал: ${$('#paper')?.value||'—'} · ${$('#density')?.value||'—'}\nПечать: ${state.side||'—'}\nДопечатная: ${state.prepress}\nПостпечатка: ${finishText()}\nМакет: ${state.file?`${state.file.name} (приложить к письму)`:'не приложен'}\nПолучение: ${state.delivery}${state.delivery.startsWith('Курьер')&&$('#address')?.value?` · ${$('#address').value}`:''}\nКлиент: ${$('#name')?.value||'—'}\nТелефон: ${$('#phone')?.value||'—'}\nE-mail: ${$('#email')?.value||'—'}${$('#desiredDate')?.value?`\nЖелаемый срок: ${$('#desiredDate').value}`:''}${$('#notes')?.value.trim()?`\nКомментарий: ${$('#notes').value.trim()}`:''}`;
     }
 
-    function completeness(){
-      const p=PRODUCTS[state.product];
-      const checks=[Boolean(state.product),Boolean($('#size')?.value),isValidQuantity($('#qty')?.value),Boolean($('#paper')?.value),Boolean(state.side),Boolean($('#name')?.value.trim()),Boolean($('#phone')?.value.trim()||$('#email')?.value.trim()),Boolean(state.delivery)];
-      if(isCustomSize($('#size')?.value)) checks.push(isValidDimension($('#customWidth')?.value)&&isValidDimension($('#customHeight')?.value));
-      if(p.pages) checks.push(isValidPages($('#pages')?.value));
-      if(state.delivery.startsWith('Курьер')) checks.push(Boolean($('#address')?.value.trim()));
-      return Math.round(checks.filter(Boolean).length/checks.length*100);
-    }
-
     function updateMissing(){
-      const errors=allErrors();const list=$('#missingList'),box=$('#summaryMissing'),status=$('#summaryStatus');
-      if(list) list.innerHTML=(errors.length?errors.slice(0,4):['Все обязательные данные заполнены.']).map(x=>`<li>${esc(x)}</li>`).join('');
-      if(box) box.classList.toggle('ready',!errors.length);
-      if(status){status.textContent=errors.length?'Нужно заполнить':'Готово';status.classList.toggle('ready',!errors.length);}
-    }
+  const furthest=Math.max(0,Math.min(3,Number(doc.body?.dataset.builderFurthest||0)));
+  const current=Math.max(0,Math.min(3,Number(doc.body?.dataset.builderCurrent||0)));
+  const finalErrors=allErrors();
+  const errors=furthest<3?[SUMMARY_NEXT_HINTS[current]]:finalErrors;
+  const ready=furthest>=3&&!finalErrors.length;
+  const list=$('#missingList'),box=$('#summaryMissing'),status=$('#summaryStatus'),title=box?.querySelector('b');
+  if(list) list.innerHTML=(ready?['Все обязательные данные заполнены.']:errors.slice(0,4)).map(x=>`<li>${esc(x)}</li>`).join('');
+  if(title) title.textContent=ready?'Все готово':furthest<3?'Дальше':'Осталось заполнить';
+  if(box) box.classList.toggle('ready',ready);
+  if(status){status.textContent=ready?'Готово':furthest<3?'В процессе':'Нужно заполнить';status.classList.toggle('ready',ready);}
+}
 
     function update(){
       const p=PRODUCTS[state.product];
       if($('#sumProduct')) $('#sumProduct').textContent=p.name;if($('#sumSize')) $('#sumSize').textContent=sizeText();if($('#sumQty')) $('#sumQty').textContent=isValidQuantity($('#qty')?.value)?`${$('#qty').value} шт.`:'—';if($('#sumPages')) $('#sumPages').textContent=$('#pages')?.value||'—';if($('#sumPaper')) $('#sumPaper').textContent=`${$('#paper')?.value||'—'} · ${$('#density')?.value||'—'}`;if($('#sumSide')) $('#sumSide').textContent=state.side||'—';if($('#sumFinish')) $('#sumFinish').textContent=finishText();if($('#sumDelivery')) $('#sumDelivery').textContent=state.delivery;if($('#sumContact')) $('#sumContact').textContent=contactText();if($('#sumFile')) $('#sumFile').textContent=state.file?`${state.file.name} · приложить к письму`:'не приложен';
-      const c=completeness();if($('#completenessText')) $('#completenessText').textContent=`${c}%`;if($('#completenessBar')) $('#completenessBar').style.width=`${c}%`;if($('#managerText')) $('#managerText').textContent=managerText();syncQtyPresets();updateMissing();
+      syncQtyPresets();updateMissing();
     }
 
     function handleFile(f){
@@ -220,6 +218,8 @@
     const date=$('#desiredDate');if(date)date.min=todayISO();
     const file=$('#file'),drop=$('#dropzone');if(file)file.addEventListener('change',()=>file.files?.[0]&&handleFile(file.files[0]));if(drop){['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>e.preventDefault()));drop.addEventListener('drop',e=>{e.preventDefault();if(e.dataTransfer?.files?.[0])handleFile(e.dataTransfer.files[0]);});}
     const uploadHint=drop?.querySelector('span');if(uploadHint)uploadHint.textContent='PDF, JPG, PNG, TIFF · до 50 МБ. При отправке через почту приложите его вручную.';
+
+    doc.addEventListener('builder:progresschange',update);
 
     const modal=$('#modal');let lastModalTrigger=null;
     const modalLead=modal?.querySelector('.modal-lead');if(modalLead)modalLead.textContent='Проверьте текст и отправьте его менеджеру. Если выбрали макет, приложите его к письму вручную — mailto не может прикрепить локальный файл автоматически.';

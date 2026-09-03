@@ -170,7 +170,7 @@ console.log(JSON.stringify(out));
     def test_builder_summary_cannot_skip_unconfirmed_steps(self):
         ux = read("assets/builder-ux.js")
         self.assertIn("summarySubmit.disabled=locked", ux)
-        self.assertIn("Пройдите 4 шага", ux)
+        self.assertIn("Продолжите заполнение", ux)
 
     def test_mail_handoff_is_honest_about_local_attachment(self):
         js = read("assets/builder.js")
