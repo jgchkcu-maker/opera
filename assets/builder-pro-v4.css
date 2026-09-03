@@ -1,5 +1,5 @@
 /* Opera-print builder v4 — task-first professional polish inspired by modern print configurators */
-body.builder-page{--pro-magenta:var(--magenta,#c13b78);--pro-cyan:var(--cyan,#1595a8);--pro-ink:#1b1d21;--pro-line:#ded7ce;--pro-soft:#f8f4ed}
+body.builder-page{--pro-magenta:var(--magenta,#c13b78);--pro-cyan:var(--cyan,#1595a8);--pro-ink:#1b1d21;--pro-line:#ded7ce;--pro-soft:#f8f4ed;--motion-spring:cubic-bezier(.22,.86,.3,1.08);--motion-soft:cubic-bezier(.2,.75,.2,1)}
 
 /* Cleaner hierarchy: the form is the product, not the marketing copy. */
 body.builder-page .builder-hero h1{max-width:720px;font-size:clamp(42px,5vw,64px);line-height:.98;letter-spacing:-.048em}
@@ -52,6 +52,69 @@ body.builder-page .builder-finish-block .finish.checked{border-color:#8b8278!imp
 body.builder-page .builder-finish-block .finish.checked::after{content:'✓';border-color:var(--pro-magenta);background:var(--pro-magenta);color:#fff}
 body.builder-page .builder-finish-block .finish:focus-within{border-color:#78aeb5!important;box-shadow:0 0 0 3px rgba(20,150,168,.10)!important}
 
+/* Motion language for steps and progress. */
+body.builder-page .builder-stage{transform-origin:50% 20%;will-change:transform,opacity}
+body.builder-page .builder-stage.stage-swap-forward{animation:stageSwapForward .34s var(--motion-soft) both}
+body.builder-page .builder-stage.stage-swap-back{animation:stageSwapBack .34s var(--motion-soft) both}
+body.builder-page .builder-progress button i{transition:background-color .24s ease,color .24s ease,border-color .24s ease,box-shadow .3s var(--motion-soft),transform .3s var(--motion-spring)}
+body.builder-page .builder-progress button i.progress-pop{animation:progressPop .36s var(--motion-spring) both}
+body.builder-page .builder-progress.is-switching::before{filter:saturate(1.08)}
+@keyframes stageSwapForward{0%{opacity:0;transform:translate3d(11px,4px,0) scale(.992)}100%{opacity:1;transform:translate3d(0,0,0) scale(1)}}
+@keyframes stageSwapBack{0%{opacity:0;transform:translate3d(-11px,4px,0) scale(.992)}100%{opacity:1;transform:translate3d(0,0,0) scale(1)}}
+@keyframes progressPop{0%{transform:scale(.82)}58%{transform:scale(1.11)}100%{transform:scale(1)}}
+
+/* Summary sheet: light glass, brand hierarchy, clear status and action. */
+body.builder-page .summary{
+  color:var(--pro-ink);
+  border:1px solid rgba(24,26,30,.11);
+  background:linear-gradient(155deg,rgba(255,255,255,.96),rgba(247,243,236,.94));
+  box-shadow:0 26px 70px rgba(18,21,25,.18),inset 0 1px 0 rgba(255,255,255,.88)
+}
+body.builder-page .summary-head{border-bottom-color:rgba(24,26,30,.09)}
+body.builder-page .summary-kicker{color:var(--pro-cyan)}
+body.builder-page .summary-head h3{color:var(--pro-ink)}
+body.builder-page .summary-status{
+  color:#0d6571!important;
+  border:1px solid rgba(21,149,168,.2)!important;
+  background:rgba(229,244,246,.9)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.7)
+}
+body.builder-page .summary-core{border-color:rgba(24,26,30,.085)}
+body.builder-page .sum-row{border-bottom-color:rgba(24,26,30,.075)}
+body.builder-page .sum-row span{color:#77736e}
+body.builder-page .sum-row b{color:var(--pro-ink)}
+body.builder-page .summary-progress{background:rgba(229,244,246,.52);border:1px solid rgba(21,149,168,.13)}
+body.builder-page .summary-progress .progressbar{background:rgba(21,149,168,.11)}
+body.builder-page .summary-progress .progressbar i{background:linear-gradient(90deg,var(--pro-cyan),var(--pro-magenta));box-shadow:0 2px 10px rgba(21,149,168,.12)}
+body.builder-page .summary-missing{background:rgba(248,231,239,.54);border-color:rgba(193,59,120,.12)}
+body.builder-page .summary-missing b{color:var(--pro-magenta)}
+body.builder-page .summary-submit{
+  color:#fff!important;
+  border-color:transparent!important;
+  background:linear-gradient(112deg,#14353b 0%,#191b1f 34%,#191b1f 66%,#451f32 100%)!important;
+  box-shadow:-8px 10px 25px rgba(21,149,168,.11),8px 10px 25px rgba(193,59,120,.11)!important
+}
+body.builder-page .summary-note{color:#77736e}
+body.builder-page .summary-toggle-row button{color:var(--pro-ink)!important;background:rgba(255,255,255,.5)!important;border:1px solid rgba(24,26,30,.08)!important;border-radius:999px!important;width:38px;height:38px}
+
+body.builder-page .summary.is-open .summary-core .sum-row{opacity:0;animation:summaryRowIn .3s var(--motion-soft) forwards;animation-delay:calc(var(--summary-row-index,0) * 28ms)}
+body.builder-page .summary.is-open .summary-core .sum-row:nth-child(1){--summary-row-index:1}
+body.builder-page .summary.is-open .summary-core .sum-row:nth-child(2){--summary-row-index:2}
+body.builder-page .summary.is-open .summary-core .sum-row:nth-child(3){--summary-row-index:3}
+body.builder-page .summary.is-open .summary-core .sum-row:nth-child(4){--summary-row-index:4}
+body.builder-page .summary.is-open .summary-core .sum-row:nth-child(5){--summary-row-index:5}
+body.builder-page .summary.is-open .summary-core .sum-row:nth-child(6){--summary-row-index:6}
+body.builder-page .summary.is-open .summary-core .sum-row:nth-child(7){--summary-row-index:7}
+body.builder-page .summary.is-open .summary-core .sum-row:nth-child(8){--summary-row-index:8}
+body.builder-page .summary.is-open .summary-core .sum-row:nth-child(9){--summary-row-index:9}
+body.builder-page .summary.is-open .summary-progress{animation:summaryRowIn .32s var(--motion-soft) .16s both}
+body.builder-page .summary.is-open .summary-missing{animation:summaryRowIn .32s var(--motion-soft) .2s both}
+body.builder-page .summary.is-open .summary-submit{animation:summaryRowIn .32s var(--motion-soft) .23s both}
+@keyframes summaryRowIn{0%{opacity:0;transform:translateY(8px)}100%{opacity:1;transform:none}}
+@keyframes summarySheetIn{0%{opacity:.5;transform:translate3d(0,34px,0) scale(.975)}62%{opacity:1;transform:translate3d(0,-3px,0) scale(1.003)}100%{opacity:1;transform:translate3d(0,0,0) scale(1)}}
+@keyframes summarySheetOut{0%{opacity:1;transform:translate3d(0,0,0) scale(1)}100%{opacity:0;transform:translate3d(0,28px,0) scale(.985)}}
+@keyframes summaryBackdropIn{0%{opacity:0}100%{opacity:1}}
+
 @media (hover:hover) and (pointer:fine){
   body.builder-page .product-picker-option:hover{transform:none;border-color:#aaa198;box-shadow:0 6px 18px rgba(31,27,22,.05)}
   body.builder-page .product-picker-option:hover .product-picker-icon,body.builder-page .product-picker-option.is-selected:hover .product-picker-icon{transform:none}
@@ -71,10 +134,10 @@ body.builder-page .builder-finish-block .finish:focus-within{border-color:#78aeb
   body.builder-page .builder-mobile-step-label span{font-size:9px;font-weight:750;text-transform:uppercase;letter-spacing:.06em}
   body.builder-page .builder-mobile-step-label b{font-size:11px;color:var(--pro-ink);text-align:right}
   body.builder-page .builder-progress{position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin:0 0 10px;padding:0 7px;overflow:visible;background:transparent}
-  body.builder-page .builder-progress::before{content:'';position:absolute;left:12.5%;right:12.5%;top:16px;height:1px;background:#ddd5ca}
+  body.builder-page .builder-progress::before{content:'';position:absolute;left:12.5%;right:12.5%;top:16px;height:1px;background:#ddd5ca;transition:filter .28s ease}
   body.builder-page .builder-progress button{position:relative;z-index:1;display:grid;place-items:center;min-height:32px;padding:0;border:0!important;border-radius:0;background:transparent!important;box-shadow:none!important}
   body.builder-page .builder-progress button i{display:grid;place-items:center;width:28px;height:28px;flex-basis:28px;border:1px solid #ded7ce;background:#f3eee6;color:#817b74;font-size:9px;box-shadow:0 0 0 5px var(--paper,#f5f1ea)}
-  body.builder-page .builder-progress button.active i{border-color:var(--pro-magenta);background:var(--pro-magenta);color:#fff;transform:none}
+  body.builder-page .builder-progress button.active i{border-color:transparent;background:linear-gradient(135deg,var(--pro-cyan) 0 47%,var(--pro-magenta) 53% 100%);color:#fff;transform:none}
   body.builder-page .builder-progress button.is-complete i{border-color:#2a2d31;background:#2a2d31;color:#fff}
   body.builder-page .builder-progress button span{display:none!important}
   body.builder-page .builder-progress button:disabled{opacity:1}
@@ -151,7 +214,7 @@ body.builder-page .builder-finish-block .finish:focus-within{border-color:#78aeb
     min-height:52px;
     border-radius:22px;
     pointer-events:auto;
-    transition:transform .16s ease,box-shadow .18s ease,background-color .18s ease,opacity .18s ease
+    transition:transform .16s var(--motion-soft),box-shadow .18s ease,background-color .18s ease,opacity .18s ease
   }
   body.builder-page .builder-mobile-action .mobile-icon{
     display:grid;
@@ -183,6 +246,11 @@ body.builder-page .builder-finish-block .finish:focus-within{border-color:#78aeb
   body.builder-page .builder-mobile-action .mobile-next[data-final="true"]::after{content:'↗'}
   body.builder-page .builder-mobile-action button:active{transform:scale(.975)}
   body.builder-page .builder-mobile-action button:disabled{opacity:.38;box-shadow:none}
+
+  body.builder-page .summary{backdrop-filter:blur(28px) saturate(1.22);-webkit-backdrop-filter:blur(28px) saturate(1.22)}
+  body.builder-page .summary.is-open{animation:summarySheetIn .42s var(--motion-spring) both}
+  body.builder-page .summary.is-closing{animation:summarySheetOut .26s cubic-bezier(.4,0,.7,.2) both;pointer-events:none}
+  body.summary-open .summary-backdrop{animation:summaryBackdropIn .24s ease-out both;background:rgba(16,18,21,.35);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
 }
 
 @media (max-width:380px){
@@ -196,8 +264,10 @@ body.builder-page .builder-finish-block .finish:focus-within{border-color:#78aeb
 @media (prefers-reduced-transparency:reduce){
   body.builder-page .builder-mobile-action{backdrop-filter:none;-webkit-backdrop-filter:none;background:#f9f5ef}
   body.builder-page .builder-mobile-action .mobile-icon{background:#fffdfa}
+  body.builder-page .summary{backdrop-filter:none;-webkit-backdrop-filter:none;background:#fffdfa}
 }
 
 @media (prefers-reduced-motion:reduce){
   body.builder-page .builder-finish-block .finish,body.builder-page .builder-finish-block .finish::after,body.builder-page .builder-mobile-action button{transition:none!important}
+  body.builder-page .builder-stage.stage-swap-forward,body.builder-page .builder-stage.stage-swap-back,body.builder-page .builder-progress button i.progress-pop,body.builder-page .summary.is-open,body.builder-page .summary.is-closing,body.builder-page .summary.is-open .summary-core .sum-row,body.builder-page .summary.is-open .summary-progress,body.builder-page .summary.is-open .summary-missing,body.builder-page .summary.is-open .summary-submit{animation:none!important}
 }
