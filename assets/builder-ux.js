@@ -26,6 +26,10 @@
   let furthest=0;
   let lastSummaryTrigger=null;
   let summaryCloseTimer=null;
+  let dragStartY=0;
+  let dragDistance=0;
+  let dragStartedAt=0;
+  let sheetDragging=false;
 
   const builderApi=()=>window.OperaBuilder;
   const validateStage=index=>builderApi()?.validateStage(index,true)!==false;
@@ -90,8 +94,20 @@
   }
 
   function setSummaryExpanded(expanded){summaryToggles.forEach(toggle=>toggle.setAttribute('aria-expanded',String(expanded)));}
+
+  function resetSummaryDrag(){
+    if(!summary)return;
+    sheetDragging=false;
+    dragStartY=0;
+    dragDistance=0;
+    dragStartedAt=0;
+    summary.classList.remove('sheet-dragging');
+    summary.style.removeProperty('transform');
+  }
+
   function openSummary(trigger){
     if(!summary)return;
+    resetSummaryDrag();
     if(trigger)lastSummaryTrigger=trigger;
     if(summaryCloseTimer){window.clearTimeout(summaryCloseTimer);summaryCloseTimer=null;}
     summary.classList.remove('is-closing');
@@ -108,19 +124,74 @@
     summary.addEventListener('animationend',()=>summary.classList.remove('summary-sheet-in'),{once:true});
     summaryClose?.focus({preventScroll:true});
   }
+
   function closeSummary(restoreFocus=false){
     if(!summary)return;
+    resetSummaryDrag();
     const finish=()=>{
+      resetSummaryDrag();
       summary.classList.remove('is-open','is-closing','summary-sheet-in');
       document.body.classList.remove('summary-open');
       setSummaryExpanded(false);
-      if(restoreFocus&&lastSummaryTrigger)lastSummaryTrigger.focus();
+      if(restoreFocus&&lastSummaryTrigger)lastSummaryTrigger.focus({preventScroll:true});
       summaryCloseTimer=null;
     };
     if(!mobileQuery.matches||reduced||!summary.classList.contains('is-open')){finish();return;}
     summary.classList.add('is-closing');
     document.body.classList.remove('summary-open');
     summaryCloseTimer=window.setTimeout(finish,280);
+  }
+
+  function bindSummaryDrag(){
+    if(!summary||summary.dataset.dragBound==='true')return;
+    summary.dataset.dragBound='true';
+
+    summary.addEventListener('touchstart',event=>{
+      if(!mobileQuery.matches||!summary.classList.contains('is-open')||event.touches.length!==1)return;
+      if(summary.scrollTop>0)return;
+      const touch=event.touches[0];
+      const rect=summary.getBoundingClientRect();
+      const inGripZone=touch.clientY-rect.top<=104;
+      if(!inGripZone)return;
+      dragStartY=touch.clientY;
+      dragDistance=0;
+      dragStartedAt=performance.now();
+      sheetDragging=false;
+    },{passive:true});
+
+    summary.addEventListener('touchmove',event=>{
+      if(!dragStartY||event.touches.length!==1||summary.scrollTop>0)return;
+      const delta=event.touches[0].clientY-dragStartY;
+      if(delta<=0)return;
+      if(!sheetDragging&&delta<7)return;
+      sheetDragging=true;
+      dragDistance=Math.min(delta,260);
+      summary.classList.add('sheet-dragging');
+      summary.style.transform=`translate3d(0,${dragDistance}px,0)`;
+      event.preventDefault();
+    },{passive:false});
+
+    const finishDrag=()=>{
+      if(!dragStartY){resetSummaryDrag();return;}
+      const elapsed=Math.max(1,performance.now()-dragStartedAt);
+      const velocity=dragDistance/elapsed;
+      const shouldDismiss=sheetDragging&&(dragDistance>=88||(dragDistance>=44&&velocity>.55));
+      const restoreFocus=shouldDismiss;
+      summary.classList.remove('sheet-dragging');
+      summary.style.removeProperty('transform');
+      dragStartY=0;
+      dragStartedAt=0;
+      sheetDragging=false;
+      const travelled=dragDistance;
+      dragDistance=0;
+      if(shouldDismiss){closeSummary(restoreFocus);return;}
+      if(travelled>0&&!reduced){
+        summary.classList.add('summary-snap-back');
+        window.setTimeout(()=>summary.classList.remove('summary-snap-back'),320);
+      }
+    };
+    summary.addEventListener('touchend',finishDrag,{passive:true});
+    summary.addEventListener('touchcancel',finishDrag,{passive:true});
   }
 
   function next(){
@@ -156,7 +227,8 @@
     if(event.detail?.validate)window.OperaBuilder?.validateStage(index,true);
   });
   document.addEventListener('keydown',event=>{if(event.key==='Escape'&&summary?.classList.contains('is-open'))closeSummary(true);});
-  window.addEventListener('resize',()=>{if(window.innerWidth>720)closeSummary();},{passive:true});
+  window.addEventListener('resize',()=>{if(window.innerWidth>720){resetSummaryDrag();closeSummary();}},{passive:true});
+  bindSummaryDrag();
   show(0,false,'forward');
 
   function loadSmartOrdering(){
