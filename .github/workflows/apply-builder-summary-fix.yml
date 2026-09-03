@@ -14,5 +14,150 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: fix-builder-summary-panel
-      - name: Smoke
-        run: echo "builder summary patch runner is valid"
+      - name: Patch summary sources
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def rep(path, old, new):
+              p=Path(path); text=p.read_text(encoding='utf-8')
+              if old in text:
+                  p.write_text(text.replace(old,new,1),encoding='utf-8'); return
+              if new in text: return
+              raise SystemExit(f'missing source marker in {path}: {old[:80]!r}')
+
+          # Summary markup: future-step defaults stay hidden until the user reaches that step.
+          pairs=[
+            ('<div class="sum-row"><span>Формат</span><b id="sumSize">—</b></div>','<div class="sum-row" data-summary-step="1"><span>Формат</span><b id="sumSize">—</b></div>'),
+            ('<div class="sum-row"><span>Тираж</span><b id="sumQty">—</b></div>','<div class="sum-row" data-summary-step="1"><span>Тираж</span><b id="sumQty">—</b></div>'),
+            ('<div class="sum-row is-hidden" id="sumPagesRow"><span>Страниц</span><b id="sumPages">—</b></div>','<div class="sum-row is-hidden" id="sumPagesRow" data-summary-step="1"><span>Страниц</span><b id="sumPages">—</b></div>'),
+            ('<div class="sum-row"><span>Материал</span><b id="sumPaper">—</b></div>','<div class="sum-row" data-summary-step="2"><span>Материал</span><b id="sumPaper">—</b></div>'),
+            ('<div class="sum-row"><span>Печать</span><b id="sumSide">—</b></div>','<div class="sum-row" data-summary-step="2"><span>Печать</span><b id="sumSide">—</b></div>'),
+            ('<div class="sum-row"><span>Обработка</span><b id="sumFinish">—</b></div>','<div class="sum-row" data-summary-step="3"><span>Обработка</span><b id="sumFinish">—</b></div>'),
+            ('<div class="sum-row"><span>Получение</span><b id="sumDelivery">—</b></div>','<div class="sum-row" data-summary-step="3"><span>Получение</span><b id="sumDelivery">—</b></div>'),
+            ('<div class="sum-row"><span>Контакт</span><b id="sumContact">не указан</b></div>','<div class="sum-row" data-summary-step="3"><span>Контакт</span><b id="sumContact">не указан</b></div>'),
+            ('<div class="sum-row"><span>Макет</span><b id="sumFile">не приложен</b></div>','<div class="sum-row" data-summary-step="3"><span>Макет</span><b id="sumFile">не приложен</b></div>'),
+            ('<div class="summary-progress"><div><span>Готовность заявки</span><b id="completenessText">0%</b></div><div class="progressbar"><i id="completenessBar"></i></div></div>','<div class="summary-progress"><div><span>Прогресс</span><b id="completenessText">1 из 4</b></div><div class="progressbar"><i id="completenessBar"></i></div></div>'),
+            ('<p class="summary-note">Это не окончательная цена. Менеджер проверит технологию, макет и подтвердит стоимость и срок.</p>','<p class="summary-note">Менеджер проверит макет, стоимость и срок перед запуском.</p>'),
+            ('        <details class="manager-preview"><summary>Что получит менеджер</summary><pre id="managerText"></pre></details>\n','')]
+          for old,new in pairs: rep('builder.html',old,new)
+
+          # Navigation owns progress because it knows which stages are actually reached.
+          rep('assets/builder-ux.js',
+              "  const summarySubmit=document.querySelector('#sendBtn');\n",
+              "  const summarySubmit=document.querySelector('#sendBtn');\n  const summaryRows=[...document.querySelectorAll('[data-summary-step]')];\n  const completenessText=document.querySelector('#completenessText');\n  const completenessBar=document.querySelector('#completenessBar');\n  const stickyHeader=document.querySelector('header');\n")
+          old="""  function updateProgress(){
+            progress.forEach((button,i)=>{
+              button.classList.toggle('active',i===current);
+              button.classList.toggle('is-complete',i<current&&i<=furthest);
+              button.setAttribute('aria-current',i===current?'step':'false');
+              button.disabled=i>furthest;
+              const icon=button.querySelector('i');
+              if(icon) icon.textContent=i<current&&i<=furthest?'✓':String(i+1);
+            });
+            pulseProgress();
+            if(summarySubmit){
+              const locked=furthest<stages.length-1;
+              summarySubmit.disabled=locked;
+              summarySubmit.setAttribute('aria-disabled',String(locked));
+              summarySubmit.textContent=locked?'Пройдите 4 шага':'Сформировать заявку';
+              summarySubmit.style.opacity=locked?'.48':'1';
+              summarySubmit.style.cursor=locked?'not-allowed':'pointer';
+            }
+          }
+          """.replace('          ','')
+          new="""  function updateProgress(){
+            progress.forEach((button,i)=>{
+              button.classList.toggle('active',i===current);
+              button.classList.toggle('is-complete',i<current&&i<=furthest);
+              button.setAttribute('aria-current',i===current?'step':'false');
+              button.disabled=i>furthest;
+              const icon=button.querySelector('i');
+              if(icon) icon.textContent=i<current&&i<=furthest?'✓':String(i+1);
+            });
+            document.body.dataset.builderCurrent=String(current);
+            document.body.dataset.builderFurthest=String(furthest);
+            summaryRows.forEach(row=>{row.hidden=Number(row.dataset.summaryStep)>furthest;});
+            const reached=furthest+1;
+            const percent=Math.round(reached/stages.length*100);
+            if(completenessText)completenessText.textContent=`${reached} из ${stages.length}`;
+            if(completenessBar)completenessBar.style.width=`${percent}%`;
+            document.dispatchEvent(new CustomEvent('builder:progresschange',{detail:{current,furthest,reached,percent}}));
+            pulseProgress();
+            if(summarySubmit){
+              const locked=furthest<stages.length-1;
+              summarySubmit.disabled=locked;
+              summarySubmit.setAttribute('aria-disabled',String(locked));
+              summarySubmit.textContent=locked?'Продолжите заполнение':'Сформировать заявку';
+            }
+          }
+          """.replace('          ','')
+          rep('assets/builder-ux.js',old,new)
+          rep('assets/builder-ux.js',
+              "  function setSummaryExpanded(expanded){summaryToggles.forEach(toggle=>toggle.setAttribute('aria-expanded',String(expanded)));}\n",
+              "  function syncSummaryStickyOffset(){\n    if(!summary||mobileQuery.matches)return;\n    const headerHeight=stickyHeader?.getBoundingClientRect().height||78;\n    document.body.style.setProperty('--builder-sticky-top',`${Math.ceil(headerHeight+16)}px`);\n  }\n\n  function setSummaryExpanded(expanded){summaryToggles.forEach(toggle=>toggle.setAttribute('aria-expanded',String(expanded)));}\n")
+          rep('assets/builder-ux.js',
+              "  window.addEventListener('resize',()=>{if(window.innerWidth>720){resetSummaryDrag();closeSummary();}},{passive:true});\n  bindSummaryDrag();\n  show(0,false,'forward');\n",
+              "  window.addEventListener('resize',()=>{syncSummaryStickyOffset();if(window.innerWidth>720){resetSummaryDrag();closeSummary();}},{passive:true});\n  if(stickyHeader&&'ResizeObserver' in window)new ResizeObserver(syncSummaryStickyOffset).observe(stickyHeader);\n  syncSummaryStickyOffset();\n  bindSummaryDrag();\n  show(0,false,'forward');\n")
+
+          # Builder validation still creates the e-mail, but it no longer owns the progress meter.
+          rep('assets/builder.js',
+              "  const FEATURED=['businessCards','leaflets','catalogs','stickers','menus','books','calendars'];\n",
+              "  const FEATURED=['businessCards','leaflets','catalogs','stickers','menus','books','calendars'];\n  const SUMMARY_NEXT_HINTS=['Перейдите к размеру и тиражу.','Проверьте размер и тираж, затем продолжите.','Уточните материал и печать.','Добавьте отделку и контакт.'];\n")
+          old="""    function completeness(){
+            const p=PRODUCTS[state.product];
+            const checks=[Boolean(state.product),Boolean($('#size')?.value),isValidQuantity($('#qty')?.value),Boolean($('#paper')?.value),Boolean(state.side),Boolean($('#name')?.value.trim()),Boolean($('#phone')?.value.trim()||$('#email')?.value.trim()),Boolean(state.delivery)];
+            if(isCustomSize($('#size')?.value)) checks.push(isValidDimension($('#customWidth')?.value)&&isValidDimension($('#customHeight')?.value));
+            if(p.pages) checks.push(isValidPages($('#pages')?.value));
+            if(state.delivery.startsWith('Курьер')) checks.push(Boolean($('#address')?.value.trim()));
+            return Math.round(checks.filter(Boolean).length/checks.length*100);
+          }
+
+          """.replace('          ','')
+          rep('assets/builder.js',old,'')
+          old="""    function updateMissing(){
+            const errors=allErrors();const list=$('#missingList'),box=$('#summaryMissing'),status=$('#summaryStatus');
+            if(list) list.innerHTML=(errors.length?errors.slice(0,4):['Все обязательные данные заполнены.']).map(x=>`<li>${esc(x)}</li>`).join('');
+            if(box) box.classList.toggle('ready',!errors.length);
+            if(status){status.textContent=errors.length?'Нужно заполнить':'Готово';status.classList.toggle('ready',!errors.length);}
+          }
+          """.replace('          ','')
+          new="""    function updateMissing(){
+            const furthest=Math.max(0,Math.min(3,Number(doc.body?.dataset.builderFurthest||0)));
+            const current=Math.max(0,Math.min(3,Number(doc.body?.dataset.builderCurrent||0)));
+            const finalErrors=allErrors();
+            const errors=furthest<3?[SUMMARY_NEXT_HINTS[current]]:finalErrors;
+            const ready=furthest>=3&&!finalErrors.length;
+            const list=$('#missingList'),box=$('#summaryMissing'),status=$('#summaryStatus'),title=box?.querySelector('b');
+            if(list) list.innerHTML=(ready?['Все обязательные данные заполнены.']:errors.slice(0,4)).map(x=>`<li>${esc(x)}</li>`).join('');
+            if(title) title.textContent=ready?'Все готово':furthest<3?'Дальше':'Осталось заполнить';
+            if(box) box.classList.toggle('ready',ready);
+            if(status){status.textContent=ready?'Готово':furthest<3?'В процессе':'Нужно заполнить';status.classList.toggle('ready',ready);}
+          }
+          """.replace('          ','')
+          rep('assets/builder.js',old,new)
+          rep('assets/builder.js',
+              "      const c=completeness();if($('#completenessText')) $('#completenessText').textContent=`${c}%`;if($('#completenessBar')) $('#completenessBar').style.width=`${c}%`;if($('#managerText')) $('#managerText').textContent=managerText();syncQtyPresets();updateMissing();\n",
+              "      syncQtyPresets();updateMissing();\n")
+          rep('assets/builder.js',
+              "    const modal=$('#modal');let lastModalTrigger=null;\n",
+              "    doc.addEventListener('builder:progresschange',update);\n\n    const modal=$('#modal');let lastModalTrigger=null;\n")
+
+          # Final CSS overrides: high contrast and desktop sticky panel stays below header.
+          p=Path('assets/builder-pro-v4.css'); css=p.read_text(encoding='utf-8')
+          marker='/* Builder summary clarity fix */'
+          if marker not in css:
+              css += '''\n\n/* Builder summary clarity fix */\nbody.builder-page .sum-row[hidden]{display:none!important}\nbody.builder-page .summary-progress{background:rgba(229,244,246,.58);border-color:rgba(21,149,168,.14)}\nbody.builder-page .summary-progress>div:first-child{color:#5f5b56;font-size:10px;font-weight:700}\nbody.builder-page .summary-progress b{color:var(--pro-ink);font-size:10.5px}\nbody.builder-page .summary-missing{color:#5f3b4b;background:rgba(248,231,239,.58);border:1px solid rgba(193,59,120,.12)}\nbody.builder-page .summary-missing li{color:#66565e}\nbody.builder-page .summary-submit:disabled{opacity:1!important;color:#66615b!important;border-color:rgba(24,26,30,.08)!important;background:rgba(24,26,30,.065)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.72)!important}\nbody.builder-page .summary-note{color:#66615b;font-size:10px;line-height:1.45}\n@media (min-width:721px){body.builder-page .summary{top:var(--builder-sticky-top,94px);max-height:calc(100dvh - var(--builder-sticky-top,94px) - 16px);z-index:20}}\n'''
+              p.write_text(css,encoding='utf-8')
+          PY
+      - name: Commit patched sources
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add builder.html assets/builder.js assets/builder-ux.js assets/builder-pro-v4.css
+          if git diff --cached --quiet; then
+            echo "No source changes to commit"
+          else
+            git commit -m "fix: rebuild builder summary progress and readability"
+            git push origin HEAD:fix-builder-summary-panel
+          fi
