@@ -73,11 +73,13 @@ class ProfessionalBuilderPolishTests(unittest.TestCase):
             self.assertIn(marker, css)
 
     def test_global_palette_uses_logo_colors_as_primary_accents(self):
-        css = read("assets/styles.css")
+        css = read("assets/brand-v5.css")
+        app = read("assets/app.js")
         self.assertIn("--red:#c13b78", css)
         self.assertIn("--cyan:#1595a8", css)
         self.assertIn("--magenta:#c13b78", css)
         self.assertIn("backdrop-filter:blur(22px) saturate(1.15)", css)
+        self.assertIn("assets/brand-v5.css", app)
 
 
 if __name__ == "__main__":
