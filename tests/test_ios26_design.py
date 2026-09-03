@@ -1,0 +1,71 @@
+import unittest
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def read(path):
+    return (ROOT / path).read_text(encoding="utf-8")
+
+
+class IOS26DesignTests(unittest.TestCase):
+    def test_global_liquid_glass_tokens_and_fallbacks(self):
+        css = read("assets/brand-v5.css")
+        for marker in (
+            "--glass-bg:",
+            "--glass-elevated:",
+            "--radius-xl:",
+            "--motion-spring:",
+            "@media (prefers-reduced-transparency:reduce)",
+            "@media (prefers-reduced-motion:reduce)",
+        ):
+            self.assertIn(marker, css)
+
+    def test_mobile_drawer_animates_without_display_switching(self):
+        css = read("assets/brand-v5.css") + read("assets/enhancements.css")
+        self.assertIn(".drawer{", css)
+        self.assertIn("max-height:0", css)
+        self.assertIn("visibility:hidden", css)
+        self.assertIn("pointer-events:none", css)
+        self.assertIn(".drawer.open", css)
+        self.assertIn("max-height:560px", css)
+
+    def test_catalogue_filter_scroller_and_empty_state_are_enhanced(self):
+        app = read("assets/app.js")
+        css = read("assets/brand-v5.css")
+        self.assertIn("initFilterScroller", app)
+        self.assertIn("filter-scroller", app)
+        self.assertIn("catalogue-empty", app)
+        self.assertIn("scroll-snap-type:x proximity", css)
+        self.assertIn("overscroll-behavior-x:contain", css)
+
+    def test_service_detail_noise_and_image_failure_are_handled(self):
+        app = read("assets/app.js")
+        css = read("assets/brand-v5.css")
+        self.assertIn("upgradeServiceDetails", app)
+        self.assertIn("service-guidance", app)
+        self.assertIn(".service-photo.image-error", css)
+        self.assertIn("Фото временно недоступно", css)
+
+    def test_builder_sheet_supports_drag_dismiss_and_modal_stacks_above_it(self):
+        ux = read("assets/builder-ux.js")
+        css = read("assets/builder-pro-v4.css")
+        self.assertIn("bindSummaryDrag", ux)
+        self.assertIn("sheet-dragging", ux)
+        self.assertIn("dragStartY", ux)
+        self.assertIn("dragDistance", ux)
+        self.assertIn("z-index:111", css)
+        self.assertIn("z-index:110", css)
+        self.assertIn("z-index:140", css)
+        self.assertIn(".summary::before", css)
+
+    def test_ios_motion_is_functional_not_infinite(self):
+        css = read("assets/brand-v5.css") + read("assets/builder-pro-v4.css")
+        self.assertNotIn("animation-iteration-count:infinite", css)
+        self.assertNotIn("animation:infinite", css)
+        self.assertIn("scale(.975)", css)
+        self.assertIn("cubic-bezier(.22,.86,.3,1.08)", css)
+
+
+if __name__ == "__main__":
+    unittest.main()
