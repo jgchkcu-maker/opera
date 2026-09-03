@@ -26,3 +26,5 @@ jobs:
         run: python -m unittest tests.test_builder_professional -v
       - name: Run smart ordering contract
         run: python -m unittest tests.test_smart_ordering -v
+      - name: Run iOS 26 design contract
+        run: python -m unittest tests.test_ios26_design -v
