@@ -101,7 +101,7 @@
     dragStartY=0;
     dragDistance=0;
     dragStartedAt=0;
-    summary.classList.remove('sheet-dragging');
+    summary.classList.remove('sheet-dragging','summary-snap-back','summary-drag-dismiss');
     summary.style.removeProperty('transform');
   }
 
@@ -125,20 +125,30 @@
     summaryClose?.focus({preventScroll:true});
   }
 
-  function closeSummary(restoreFocus=false){
+  function closeSummary(restoreFocus=false,dragDismiss=false){
     if(!summary)return;
-    resetSummaryDrag();
     const finish=()=>{
       resetSummaryDrag();
-      summary.classList.remove('is-open','is-closing','summary-sheet-in');
+      summary.classList.remove('is-open','is-closing','summary-sheet-in','summary-drag-dismiss');
       document.body.classList.remove('summary-open');
       setSummaryExpanded(false);
       if(restoreFocus&&lastSummaryTrigger)lastSummaryTrigger.focus({preventScroll:true});
       summaryCloseTimer=null;
     };
     if(!mobileQuery.matches||reduced||!summary.classList.contains('is-open')){finish();return;}
-    summary.classList.add('is-closing');
+
     document.body.classList.remove('summary-open');
+    setSummaryExpanded(false);
+    if(dragDismiss){
+      summary.classList.remove('sheet-dragging','summary-snap-back');
+      summary.classList.add('summary-drag-dismiss');
+      summary.style.transform='translate3d(0,calc(100% + 34px),0)';
+      summaryCloseTimer=window.setTimeout(finish,260);
+      return;
+    }
+
+    resetSummaryDrag();
+    summary.classList.add('is-closing');
     summaryCloseTimer=window.setTimeout(finish,280);
   }
 
@@ -176,18 +186,20 @@
       const elapsed=Math.max(1,performance.now()-dragStartedAt);
       const velocity=dragDistance/elapsed;
       const shouldDismiss=sheetDragging&&(dragDistance>=88||(dragDistance>=44&&velocity>.55));
-      const restoreFocus=shouldDismiss;
-      summary.classList.remove('sheet-dragging');
-      summary.style.removeProperty('transform');
+      const travelled=dragDistance;
       dragStartY=0;
       dragStartedAt=0;
-      sheetDragging=false;
-      const travelled=dragDistance;
       dragDistance=0;
-      if(shouldDismiss){closeSummary(restoreFocus);return;}
+      sheetDragging=false;
+      summary.classList.remove('sheet-dragging');
+
+      if(shouldDismiss){closeSummary(true,true);return;}
       if(travelled>0&&!reduced){
         summary.classList.add('summary-snap-back');
-        window.setTimeout(()=>summary.classList.remove('summary-snap-back'),320);
+        requestAnimationFrame(()=>summary.style.removeProperty('transform'));
+        window.setTimeout(()=>summary.classList.remove('summary-snap-back'),340);
+      }else{
+        summary.style.removeProperty('transform');
       }
     };
     summary.addEventListener('touchend',finishDrag,{passive:true});
