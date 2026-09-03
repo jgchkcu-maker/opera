@@ -1,0 +1,32 @@
+name: Normalize iOS26 static markup
+
+on:
+  push:
+    branches: ["ios26-liquid-glass-system"]
+
+permissions:
+  contents: write
+
+jobs:
+  normalize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: ios26-liquid-glass-system
+      - name: Normalize static HTML sources
+        run: python tools/normalize_static_markup.py
+      - name: Commit normalized sources
+        shell: bash
+        run: |
+          if git diff --quiet -- '*.html'; then
+            echo "Markup already normalized."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- '*.html'
+          git commit -m "refactor: normalize static customer markup"
+          git push origin HEAD:ios26-liquid-glass-system

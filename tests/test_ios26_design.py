@@ -25,22 +25,32 @@ class IOS26DesignTests(unittest.TestCase):
         ):
             self.assertIn(marker, css)
 
-    def test_every_public_page_loads_final_design_before_first_paint(self):
-        enhancement_link = 'href="assets/enhancements.css"'
-        brand_link = 'href="assets/brand-v5.css"'
+    def test_every_public_page_uses_synchronous_design_entrypoint(self):
+        entry = read("assets/styles.css")
+        imports = [
+            '@import url("base.css");',
+            '@import url("enhancements.css");',
+            '@import url("brand-v5.css");',
+            '@import url("ios26-system.css");',
+        ]
+        positions = [entry.index(marker) for marker in imports]
+        self.assertEqual(positions, sorted(positions))
         for page in public_pages():
             html = page.read_text(encoding="utf-8")
             with self.subTest(page=page.name):
-                self.assertIn(enhancement_link, html)
-                self.assertIn(brand_link, html)
-                self.assertLess(html.index(enhancement_link), html.index(brand_link))
-                self.assertLess(html.index(brand_link), html.lower().index("</head>"))
+                self.assertIn('href="assets/styles.css"', html)
+                self.assertLess(html.index('href="assets/styles.css"'), html.lower().index("</head>"))
 
-    def test_source_navigation_copy_does_not_flash_old_order_wording(self):
+    def test_static_markup_is_normalized_before_javascript(self):
+        app = read("assets/app.js")
+        self.assertNotIn("upgradeNavCopy", app)
+        self.assertNotIn("ensureEnhancementStyles", app)
         for page in public_pages():
             html = page.read_text(encoding="utf-8")
             with self.subTest(page=page.name):
                 self.assertNotIn(">Собрать заказ<", html)
+                self.assertNotIn('onerror="this.remove()"', html)
+                self.assertNotIn(">☰</button>", html)
 
     def test_mobile_drawer_animates_without_display_switching(self):
         css = read("assets/brand-v5.css") + read("assets/enhancements.css")
@@ -52,12 +62,12 @@ class IOS26DesignTests(unittest.TestCase):
         self.assertIn("max-height:560px", css)
 
     def test_menu_icon_is_drawn_consistently_instead_of_using_font_glyphs(self):
-        css = read("assets/brand-v5.css")
+        css = read("assets/ios26-system.css")
         app = read("assets/app.js")
         self.assertIn(".menu-btn:before", css)
         self.assertIn(".menu-btn:after", css)
         self.assertIn('.menu-btn[aria-expanded="true"]', css)
-        self.assertNotIn("btn.textContent=open?'×':'☰'", app)
+        self.assertNotIn("textContent=open", app)
 
     def test_catalogue_filter_scroller_and_empty_state_are_enhanced(self):
         app = read("assets/app.js")
@@ -124,13 +134,13 @@ class IOS26DesignTests(unittest.TestCase):
         self.assertIn("requestAnimationFrame", ux)
 
     def test_all_buttons_share_tactile_press_feedback(self):
-        css = read("assets/brand-v5.css")
+        css = read("assets/ios26-system.css")
         self.assertIn(":where(button,.btn,.navcta", css)
         self.assertIn("transform:scale(.975)", css)
         self.assertIn(":disabled", css)
 
     def test_ios_motion_is_functional_not_infinite(self):
-        css = read("assets/brand-v5.css") + read("assets/builder-pro-v4.css")
+        css = read("assets/brand-v5.css") + read("assets/builder-pro-v4.css") + read("assets/ios26-system.css")
         self.assertNotIn("animation-iteration-count:infinite", css)
         self.assertNotIn("animation:infinite", css)
         self.assertIn("scale(.975)", css)

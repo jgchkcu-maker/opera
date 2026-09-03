@@ -11,6 +11,18 @@
     ['скругление углов','11'],['сверление отверстий','12'],['конгрев','13'],
     ['ламинирование','14'],['упаковка в термопленку','15']
   ];
+  const categoryAliases={
+    promo:'Реклама и раздача',
+    office:'Презентация и офис',
+    retail:'Для кафе, магазинов и упаковки',
+    books:'Книги и многостраничная печать'
+  };
+  const categoryLinks={
+    'реклама и раздача':'services.html?category=promo',
+    'презентация и офис':'services.html?category=office',
+    'для кафе магазинов и упаковки':'services.html?category=retail',
+    'книги и многостраничная печать':'services.html?category=books'
+  };
   const $$=(s,c)=>Array.from((c||document).querySelectorAll(s));
   const normalize=s=>String(s||'').toLowerCase().replace(/ё/g,'е').replace(/[^a-zа-я0-9]+/g,' ').trim();
 
@@ -29,21 +41,6 @@
     return hit?`${ORIGIN}postpechatnye-raboty/${hit[1]}.jpg`:null;
   }
 
-  function ensureEnhancementStyles(doc){
-    const styles=[
-      ['assets/enhancements.css','operaEnhancements'],
-      ['assets/brand-v5.css','operaBrandV5']
-    ];
-    styles.forEach(([href,datasetKey])=>{
-      if(doc.querySelector(`link[href="${href}"]`)) return;
-      const link=doc.createElement('link');
-      link.rel='stylesheet';
-      link.href=href;
-      link.dataset[datasetKey]='true';
-      doc.head.appendChild(link);
-    });
-  }
-
   function initMenu(doc){
     const btn=doc.querySelector('[data-menu]');
     const drawer=doc.querySelector('#drawer');
@@ -54,7 +51,6 @@
       drawer.classList.toggle('open',open);
       drawer.dataset.open=String(open);
       doc.body.classList.toggle('menu-open',open);
-      btn.textContent=open?'×':'☰';
       btn.setAttribute('aria-expanded',String(open));
       btn.setAttribute('aria-label',open?'Закрыть меню':'Открыть меню');
     };
@@ -73,8 +69,12 @@
     setOpen(false);
   }
 
-  function upgradeNavCopy(doc){
-    $$('.navlinks a[href^="builder.html"],#drawer a[href^="builder.html"]',doc).forEach(a=>{a.textContent='Рассчитать заказ';});
+  function enhanceCategoryLinks(doc){
+    $$('.category-card[href^="services.html"]',doc).forEach(card=>{
+      const title=normalize(card.querySelector('h3')?.textContent);
+      const href=categoryLinks[title];
+      if(href) card.setAttribute('href',href);
+    });
   }
 
   function initFilterScroller(doc){
@@ -126,6 +126,20 @@
       if(count) count.textContent=`Найдено: ${visible}`;
       if(empty) empty.hidden=visible!==0;
     };
+
+    let requestedButton=null;
+    if(typeof location!=='undefined'){
+      const params=new URLSearchParams(location.search);
+      const requestedCategory=categoryAliases[params.get('category')||''];
+      if(requestedCategory){
+        requestedButton=buttons.find(button=>button.dataset.filter===requestedCategory)||null;
+        if(requestedButton){
+          buttons.forEach(item=>item.classList.remove('active'));
+          requestedButton.classList.add('active');
+        }
+      }
+    }
+
     if(q) q.addEventListener('input',apply);
     buttons.forEach(button=>button.addEventListener('click',()=>{
       buttons.forEach(item=>item.classList.remove('active'));
@@ -134,6 +148,9 @@
       apply();
     }));
     apply();
+    if(requestedButton&&requestedButton.closest('.filter-scroller')&&typeof requestAnimationFrame==='function'){
+      requestAnimationFrame(()=>requestedButton.scrollIntoView({behavior:reduced?'auto':'smooth',block:'nearest',inline:'center'}));
+    }
   }
 
   function markImage(img){
@@ -157,16 +174,27 @@
       if(!wrap){wrap=doc.createElement('div');wrap.className='image-wrap';card.prepend(wrap);}
       let img=wrap.querySelector('img');
       if(!img){img=doc.createElement('img');wrap.appendChild(img);}
+      img.removeAttribute('onerror');
       img.src=url;
       img.loading='lazy';
       img.alt=(card.querySelector('h3')&&card.querySelector('h3').textContent.trim())||'Пример продукции';
       card.dataset.photoSource='operaprint';
       markImage(img);
     });
-    const detail=doc.querySelector('.service-photo img');
-    if(detail&&typeof location!=='undefined'){
+
+    const detailWrap=doc.querySelector('.service-photo');
+    if(detailWrap&&typeof location!=='undefined'){
       const url=getServiceImageFromHref(location.pathname);
-      if(url){detail.src=url;detail.loading='eager';detail.dataset.photoSource='operaprint';markImage(detail);}
+      if(url){
+        let detail=detailWrap.querySelector('img');
+        if(!detail){detail=doc.createElement('img');detailWrap.appendChild(detail);}
+        detail.removeAttribute('onerror');
+        detail.src=url;
+        detail.loading='eager';
+        detail.alt=detail.alt||doc.querySelector('.service-detail h2,.page-hero h1')?.textContent?.trim()||'Пример продукции';
+        detail.dataset.photoSource='operaprint';
+        markImage(detail);
+      }
     }
     $$('img',doc).forEach(markImage);
   }
@@ -188,8 +216,6 @@
       guidance.textContent='Не уверены в материале или отделке? Выберите понятные параметры в расчёте — спорные технические детали менеджер проверит перед запуском.';
       featureList.after(guidance);
     }
-
-    $$('.actions a[href^="builder.html"]',detail).forEach(a=>{a.textContent='Рассчитать заказ';});
   }
 
   function upgradePostpress(doc){
@@ -224,10 +250,9 @@
   }
 
   function init(doc){
-    ensureEnhancementStyles(doc);
     doc.documentElement.classList.add('opera-ui');
     initMenu(doc);
-    upgradeNavCopy(doc);
+    enhanceCategoryLinks(doc);
     initFilterScroller(doc);
     initFilters(doc);
     upgradeServiceImages(doc);
