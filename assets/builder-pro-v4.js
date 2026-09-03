@@ -50,7 +50,7 @@
     const mobileLabel=doc.createElement('div');
     mobileLabel.className='builder-mobile-step-label';
     mobileLabel.innerHTML='<span>Шаг 1 из 4</span><b>Изделие</b>';
-    progress[0].parentElement?.insertBefore(mobileLabel,progress[0].parentElement.firstChild);
+    progress[0].parentElement?.before(mobileLabel);
 
     function syncStepLabel(){
       let active=progress.findIndex(button=>button.getAttribute('aria-current')==='step');
