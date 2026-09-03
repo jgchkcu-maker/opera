@@ -264,6 +264,8 @@ body.builder-page .modal-close{background:rgba(255,255,255,.64);border:1px solid
   body.builder-page .summary.is-open{transform:translateY(0);animation:summarySheetIn .42s var(--motion-spring) both}
   body.builder-page .summary.is-closing{animation:summarySheetOut .26s cubic-bezier(.4,0,.7,.2) both;pointer-events:none}
   body.builder-page .summary.sheet-dragging{transition:none!important;animation:none!important;user-select:none}
+  body.builder-page .summary.summary-snap-back{transition:transform .32s var(--motion-spring)!important;animation:none!important}
+  body.builder-page .summary.summary-drag-dismiss{transition:transform .24s cubic-bezier(.4,0,.7,.2),opacity .2s ease!important;animation:none!important;pointer-events:none}
   body.builder-page .summary-toggle-row{margin-top:2px}
   body.builder-page .summary-backdrop{position:fixed;z-index:110;inset:0;display:block;border:0;background:rgba(16,18,21,.35);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);opacity:0;pointer-events:none;transition:opacity .22s ease}
   body.builder-page.summary-open .summary-backdrop{opacity:1;pointer-events:auto;animation:summaryBackdropIn .24s ease-out both}
